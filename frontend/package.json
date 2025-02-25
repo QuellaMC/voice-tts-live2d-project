@@ -1,0 +1,37 @@
+{
+  "name": "ai-anime-companion-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@chakra-ui/react": "^2.8.0",
+    "@emotion/react": "^11.11.1",
+    "@emotion/styled": "^11.11.0",
+    "@pixi/react": "^7.1.0",
+    "axios": "^1.5.0",
+    "framer-motion": "^10.16.4",
+    "next": "13.4.19",
+    "pixi-live2d-display": "^0.4.0",
+    "pixi.js": "^7.2.4",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-hook-form": "^7.46.1",
+    "react-icons": "^4.11.0",
+    "recordrtc": "^5.6.2",
+    "socket.io-client": "^4.7.2",
+    "zustand": "^4.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "20.6.0",
+    "@types/react": "18.2.21",
+    "@types/react-dom": "18.2.7",
+    "eslint": "8.49.0",
+    "eslint-config-next": "13.4.19",
+    "typescript": "5.2.2"
+  }
+} 
