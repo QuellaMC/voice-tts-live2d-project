@@ -10,7 +10,7 @@ python-jose==3.4.0
 passlib==1.7.4
 bcrypt==4.0.1
 python-multipart==0.0.18
-cryptography==41.0.3  # For API key encryption
+cryptography==44.0.1  # For API key encryption
 
 # Database
 sqlalchemy==2.0.20
