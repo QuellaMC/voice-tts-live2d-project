@@ -53,17 +53,18 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-          cache: 'npm'
+          cache: 'yarn'
           cache-dependency-path: 'frontend/package.json'
+      - name: Install Yarn
+        run: npm install -g yarn
       - name: Install dependencies
         run: |
           cd frontend
-          npm install --legacy-peer-deps
-          npm install --save-dev @typescript-eslint/eslint-plugin@5.62.0 @typescript-eslint/parser@5.62.0
+          yarn install
       - name: Lint with ESLint
         run: |
           cd frontend
-          npm run lint
+          yarn lint
 
   test-backend:
     runs-on: ubuntu-latest

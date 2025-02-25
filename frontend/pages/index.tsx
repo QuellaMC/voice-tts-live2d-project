@@ -128,7 +128,7 @@ export default function Home() {
                 Custom AI Personality
               </Heading>
               <Text>
-                Design your companion's personality, memories, knowledge base, and behavioral traits. Upload documents to create specialized knowledge.
+                Design your companion&apos;s personality, memories, knowledge base, and behavioral traits. Upload documents to create specialized knowledge.
               </Text>
             </Box>
             
