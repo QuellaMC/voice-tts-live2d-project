@@ -96,7 +96,7 @@ jobs:
           JWT_SECRET: test_secret_key
           API_KEY_ENCRYPTION_KEY: TEST_KEY_NOT_REAL_FOR_TESTING_ONLY_1234567890
       - name: Upload coverage report
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./backend/coverage.xml
