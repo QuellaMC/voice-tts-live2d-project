@@ -7,6 +7,11 @@ on:
     branches: [main, develop]
   workflow_dispatch:
 
+# 添加权限配置
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   lint-backend:
     runs-on: ubuntu-latest
@@ -31,6 +36,14 @@ jobs:
       - name: Fix imports with isort
         run: |
           isort --profile black backend
+      - name: Commit auto-formatted changes
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add backend
+          git diff --quiet && git diff --staged --quiet || git commit -m "Auto-format with black and isort" -a
+          git push
 
   lint-frontend:
     runs-on: ubuntu-latest
@@ -46,6 +59,7 @@ jobs:
         run: |
           cd frontend
           npm install --legacy-peer-deps
+          npm install --save-dev @typescript-eslint/eslint-plugin @typescript-eslint/parser
       - name: Lint with ESLint
         run: |
           cd frontend
@@ -83,6 +97,7 @@ jobs:
       - name: Upload coverage report
         uses: codecov/codecov-action@v3
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           file: ./backend/coverage.xml
           fail_ci_if_error: false
 
