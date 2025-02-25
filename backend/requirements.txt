@@ -25,7 +25,7 @@ langchain==0.0.286
 
 # TTS & Voice Processing
 elevenlabs==0.2.24
-azure-cognitiveservices-speech==1.30.0
+azure-cognitiveservices-speech==1.42.0
 
 # RVC dependencies - lighter version without GPU support
 soundfile==0.12.1
