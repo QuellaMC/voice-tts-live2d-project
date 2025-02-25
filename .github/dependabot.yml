@@ -1,0 +1,58 @@
+version: 2
+updates:
+  # Configuration for npm dependencies (frontend)
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+    versioning-strategy: auto
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "frontend"
+    # Prevent breaking PixiJS compatibility
+    ignore:
+      - dependency-name: "pixi.js"
+        versions: [">=7.0.0"]
+      - dependency-name: "@pixi/react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@pixi/*"
+        update-types: ["version-update:semver-major"]
+    # Group minor and patch updates to reduce PR noise
+    groups:
+      pixi-dependencies:
+        patterns:
+          - "pixi*"
+          - "@pixi/*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Configuration for Python dependencies (backend)
+  - package-ecosystem: "pip"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "backend"
+    # Group minor and patch updates to reduce PR noise
+    groups:
+      ml-libraries:
+        patterns:
+          - "torch*"
+          - "numpy"
+          - "langchain*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Keep GitHub Actions up-to-date
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    labels:
+      - "dependencies"
+      - "ci" 
