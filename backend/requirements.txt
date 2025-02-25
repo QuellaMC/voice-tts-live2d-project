@@ -29,7 +29,7 @@ azure-cognitiveservices-speech==1.30.0
 
 # RVC dependencies - lighter version without GPU support
 soundfile==0.12.1
-numpy==1.24.4
+numpy==2.2.3
 # Using CPU-only versions 
 torch==2.0.1
 torchaudio==2.0.2
