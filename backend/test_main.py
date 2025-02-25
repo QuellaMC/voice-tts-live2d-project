@@ -40,7 +40,7 @@ def test_encryption():
     os.environ["API_KEY_ENCRYPTION_KEY"] = test_key.decode()
     
     # Prepare test data
-    original_key = "sk-test1234567890abcdef"
+    original_key = "test-dummy-api-key-for-unit-testing-only"
     
     # Initialize Fernet
     key_bytes = base64.urlsafe_b64encode(test_key.ljust(32)[:32])
