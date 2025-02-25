@@ -1,13 +1,14 @@
-from fastapi import FastAPI, Depends, HTTPException, WebSocket, WebSocketDisconnect
-from fastapi.middleware.cors import CORSMiddleware
-import uvicorn
-import os
-import logging
-import json
 import base64
+import json
+import logging
+import os
+from typing import Any, Dict, List, Optional, Union
+
+import uvicorn
 from cryptography.fernet import Fernet
 from dotenv import load_dotenv
-from typing import List, Dict, Any, Optional, Union
+from fastapi import Depends, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
 
 # Load environment variables
 load_dotenv()
@@ -28,14 +29,16 @@ if API_KEY_ENCRYPTION_KEY:
         # Convert string to bytes if necessary
         if isinstance(API_KEY_ENCRYPTION_KEY, str):
             API_KEY_ENCRYPTION_KEY = API_KEY_ENCRYPTION_KEY.encode()
-            
+
         # Use proper key derivation
         key_bytes = base64.urlsafe_b64encode(API_KEY_ENCRYPTION_KEY.ljust(32)[:32])
         fernet = Fernet(key_bytes)
         logger.info("API key encryption initialized successfully")
     except Exception as e:
         logger.error(f"Failed to initialize API key encryption: {str(e)}")
-        logger.warning("API keys will not be encrypted. Generate a valid key with Fernet.generate_key()")
+        logger.warning(
+            "API keys will not be encrypted. Generate a valid key with Fernet.generate_key()"
+        )
 else:
     logger.warning("API_KEY_ENCRYPTION_KEY not set, API keys will not be encrypted")
 
@@ -55,6 +58,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # Helper functions for API key management
 def encrypt_api_key(api_key: str) -> str:
     """Encrypt an API key for secure storage."""
@@ -67,6 +71,7 @@ def encrypt_api_key(api_key: str) -> str:
         logger.error(f"Failed to encrypt API key: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to securely store API key")
 
+
 def decrypt_api_key(encrypted_key: str) -> str:
     """Decrypt an API key for use."""
     if not fernet:
@@ -78,15 +83,18 @@ def decrypt_api_key(encrypted_key: str) -> str:
         logger.error(f"Failed to decrypt API key: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to retrieve API key")
 
+
 # Root endpoint
 @app.get("/")
 async def root():
     return {"message": "Welcome to the AI Anime Companion API"}
 
+
 # Health check
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "version": "0.1.0"}
+
 
 # API Providers list
 @app.get("/api/apikeys/providers")
@@ -95,14 +103,27 @@ async def list_providers():
     return {
         "providers": [
             {"id": "openai", "name": "OpenAI", "description": "GPT models provider"},
-            {"id": "anthropic", "name": "Anthropic", "description": "Claude models provider"},
-            {"id": "elevenlabs", "name": "ElevenLabs", "description": "Voice synthesis provider"},
-            {"id": "azure", "name": "Azure TTS", "description": "Microsoft TTS provider"},
+            {
+                "id": "anthropic",
+                "name": "Anthropic",
+                "description": "Claude models provider",
+            },
+            {
+                "id": "elevenlabs",
+                "name": "ElevenLabs",
+                "description": "Voice synthesis provider",
+            },
+            {
+                "id": "azure",
+                "name": "Azure TTS",
+                "description": "Microsoft TTS provider",
+            },
         ]
     }
+
 
 # Run the FastAPI app if executed directly
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
     host = os.getenv("HOST", "0.0.0.0")
-    uvicorn.run("main:app", host=host, port=port, reload=True) 
+    uvicorn.run("main:app", host=host, port=port, reload=True)

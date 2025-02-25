@@ -3,20 +3,33 @@ Database models for the AI Anime Companion backend.
 These models define the structure of the database.
 """
 
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, DateTime, Text, JSON
+import enum
+from datetime import datetime
+
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
-from datetime import datetime
-import enum
 
 Base = declarative_base()
+
 
 class UserRole(enum.Enum):
     USER = "user"
     ADMIN = "admin"
 
+
 class User(Base):
     """User model for authentication and personalization."""
+
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -29,11 +42,15 @@ class User(Base):
     last_login = Column(DateTime, nullable=True)
 
     # Relationships
-    api_keys = relationship("UserApiKey", back_populates="user", cascade="all, delete-orphan")
+    api_keys = relationship(
+        "UserApiKey", back_populates="user", cascade="all, delete-orphan"
+    )
     spaces = relationship("Space", back_populates="user", cascade="all, delete-orphan")
+
 
 class ApiProvider(Base):
     """Model for supported API providers (OpenAI, Anthropic, etc.)."""
+
     __tablename__ = "api_providers"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -45,11 +62,17 @@ class ApiProvider(Base):
     is_active = Column(Boolean, default=True)
 
     # Relationships
-    admin_keys = relationship("AdminApiKey", back_populates="provider", cascade="all, delete-orphan")
-    user_keys = relationship("UserApiKey", back_populates="provider", cascade="all, delete-orphan")
+    admin_keys = relationship(
+        "AdminApiKey", back_populates="provider", cascade="all, delete-orphan"
+    )
+    user_keys = relationship(
+        "UserApiKey", back_populates="provider", cascade="all, delete-orphan"
+    )
+
 
 class AdminApiKey(Base):
     """Model for API keys managed by admins, shared among users."""
+
     __tablename__ = "admin_api_keys"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -66,8 +89,10 @@ class AdminApiKey(Base):
     provider = relationship("ApiProvider", back_populates="admin_keys")
     admin = relationship("User", foreign_keys=[added_by])
 
+
 class UserApiKey(Base):
     """Model for user-specific API keys."""
+
     __tablename__ = "user_api_keys"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -84,8 +109,10 @@ class UserApiKey(Base):
     user = relationship("User", back_populates="api_keys")
     provider = relationship("ApiProvider", back_populates="user_keys")
 
+
 class Space(Base):
     """Model for user spaces/characters."""
+
     __tablename__ = "spaces"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -102,7 +129,7 @@ class Space(Base):
     # API provider preferences
     llm_provider_id = Column(Integer, ForeignKey("api_providers.id"), nullable=True)
     tts_provider_id = Column(Integer, ForeignKey("api_providers.id"), nullable=True)
-    
+
     # Whether to use user's keys, admin keys, or default
     use_user_llm_key = Column(Boolean, default=False)
     use_user_tts_key = Column(Boolean, default=False)
@@ -111,10 +138,14 @@ class Space(Base):
     user = relationship("User", back_populates="spaces")
     llm_provider = relationship("ApiProvider", foreign_keys=[llm_provider_id])
     tts_provider = relationship("ApiProvider", foreign_keys=[tts_provider_id])
-    conversations = relationship("Conversation", back_populates="space", cascade="all, delete-orphan")
+    conversations = relationship(
+        "Conversation", back_populates="space", cascade="all, delete-orphan"
+    )
+
 
 class Conversation(Base):
     """Model for conversation history."""
+
     __tablename__ = "conversations"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -125,10 +156,14 @@ class Conversation(Base):
 
     # Relationships
     space = relationship("Space", back_populates="conversations")
-    messages = relationship("Message", back_populates="conversation", cascade="all, delete-orphan")
+    messages = relationship(
+        "Message", back_populates="conversation", cascade="all, delete-orphan"
+    )
+
 
 class Message(Base):
     """Model for individual messages in a conversation."""
+
     __tablename__ = "messages"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -139,4 +174,4 @@ class Message(Base):
     audio_url = Column(String, nullable=True)  # URL to synthesized audio
 
     # Relationships
-    conversation = relationship("Conversation", back_populates="messages") 
+    conversation = relationship("Conversation", back_populates="messages")
