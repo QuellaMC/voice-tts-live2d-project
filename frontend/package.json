@@ -15,7 +15,7 @@
     "@pixi/react": "^7.1.0",
     "axios": "^1.5.0",
     "framer-motion": "^12.4.7",
-    "next": "13.4.19",
+    "next": "14.2.21",
     "pixi-live2d-display": "^0.4.0",
     "pixi.js": "^7.2.4",
     "react": "19.0.0",
