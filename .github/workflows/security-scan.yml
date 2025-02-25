@@ -46,11 +46,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        
+        with:
+          fetch-depth: 0
       - name: Check for hardcoded secrets
         uses: gitleaks/gitleaks-action@v2
-        with:
-          args: --config-path=.gitleaks.toml # Ensure to add any necessary arguments here
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
