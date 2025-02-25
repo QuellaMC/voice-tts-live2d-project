@@ -9,7 +9,7 @@ websockets==11.0.3
 python-jose==3.3.0
 passlib==1.7.4
 bcrypt==4.0.1
-python-multipart==0.0.6
+python-multipart==0.0.18
 cryptography==41.0.3  # For API key encryption
 
 # Database
