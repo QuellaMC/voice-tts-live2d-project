@@ -9,7 +9,7 @@ This document outlines the development phases and milestones for the AI Anime Co
 - [x] Set up project structure
 - [x] Configure development environments
 - [x] Document architecture and requirements
-- [ ] Set up CI/CD pipeline
+- [x] Set up CI/CD pipeline
 
 ### Week 2: Backend Core
 - [x] Implement FastAPI server skeleton

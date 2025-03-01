@@ -1,129 +1,130 @@
-import base64
-import json
+"""Main application module."""
+
 import logging
-import os
-from typing import Any, Dict, List, Optional, Union
+from contextlib import asynccontextmanager
 
-import uvicorn
-from cryptography.fernet import Fernet
-from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 
-# Load environment variables
-load_dotenv()
+from app.core.config import settings, validate_settings
+from app.core.monitoring import setup_monitoring, cleanup_monitoring
+from app.database.session import init_db, cleanup_db
+from app.api.v1.router import api_router
+from app.schemas.response import ResponseBase
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=settings.LOG_LEVEL,
+    format=settings.LOG_FORMAT,
+    filename=settings.LOG_FILE
 )
 logger = logging.getLogger(__name__)
 
-# Initialize encryption for API keys
-API_KEY_ENCRYPTION_KEY = os.getenv("API_KEY_ENCRYPTION_KEY")
-fernet = None
-if API_KEY_ENCRYPTION_KEY:
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Handle application startup and shutdown events."""
     try:
-        # Properly prepare the key for Fernet (must be 32 url-safe base64-encoded bytes)
-        # Convert string to bytes if necessary
-        if isinstance(API_KEY_ENCRYPTION_KEY, str):
-            API_KEY_ENCRYPTION_KEY = API_KEY_ENCRYPTION_KEY.encode()
-
-        # Use proper key derivation
-        key_bytes = base64.urlsafe_b64encode(API_KEY_ENCRYPTION_KEY.ljust(32)[:32])
-        fernet = Fernet(key_bytes)
-        logger.info("API key encryption initialized successfully")
+        # Validate settings
+        validate_settings()
+        
+        # Initialize components
+        init_db()
+        logger.info("Application startup completed")
+        yield
     except Exception as e:
-        logger.error(f"Failed to initialize API key encryption: {str(e)}")
-        logger.warning(
-            "API keys will not be encrypted. Generate a valid key with Fernet.generate_key()"
-        )
-else:
-    logger.warning("API_KEY_ENCRYPTION_KEY not set, API keys will not be encrypted")
+        logger.error(f"Error during startup: {str(e)}")
+        raise
+    finally:
+        # Cleanup on shutdown
+        cleanup_db()
+        cleanup_monitoring()
+        logger.info("Application shutdown completed")
 
-# Initialize FastAPI app
+# Create FastAPI application
 app = FastAPI(
-    title="AI Anime Companion API",
-    description="Backend API for the AI Anime Companion project",
-    version="0.1.0",
+    title=settings.SERVER_NAME,
+    version="1.0.0",
+    description="Backend API for Voice TTS Live2D Project",
+    lifespan=lifespan,
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json"
 )
 
-# Add CORS middleware
+# Set up security middleware - only use TrustedHostMiddleware in production
+if settings.ENV_NAME != "development":
+    # In production, use the configured CORS origins
+    allowed_hosts = [str(host) for host in settings.BACKEND_CORS_ORIGINS] or ["*"]
+    app.add_middleware(
+        TrustedHostMiddleware,
+        allowed_hosts=allowed_hosts
+    )
+
+# Set up CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Restrict this in production
+    allow_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS] or ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Set up compression middleware
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
-# Helper functions for API key management
-def encrypt_api_key(api_key: str) -> str:
-    """Encrypt an API key for secure storage."""
-    if not fernet:
-        logger.warning("Encryption not available, storing API key unencrypted")
-        return api_key  # No encryption if not configured
-    try:
-        return fernet.encrypt(api_key.encode()).decode()
-    except Exception as e:
-        logger.error(f"Failed to encrypt API key: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to securely store API key")
+# Set up monitoring
+setup_monitoring(app)
 
+# Include API router
+app.include_router(api_router, prefix=settings.API_V1_STR)
 
-def decrypt_api_key(encrypted_key: str) -> str:
-    """Decrypt an API key for use."""
-    if not fernet:
-        logger.warning("Encryption not available, using API key as-is")
-        return encrypted_key  # No decryption if not configured
-    try:
-        return fernet.decrypt(encrypted_key.encode()).decode()
-    except Exception as e:
-        logger.error(f"Failed to decrypt API key: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve API key")
-
-
-# Root endpoint
-@app.get("/")
+# Add root endpoint to redirect to API
+@app.get("/", response_model=ResponseBase)
 async def root():
-    return {"message": "Welcome to the AI Anime Companion API"}
-
-
-# Health check
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy", "version": "0.1.0"}
-
-
-# API Providers list
-@app.get("/api/apikeys/providers")
-async def list_providers():
-    """List all supported API providers."""
+    """Root endpoint that welcomes users and directs them to the API."""
     return {
-        "providers": [
-            {"id": "openai", "name": "OpenAI", "description": "GPT models provider"},
-            {
-                "id": "anthropic",
-                "name": "Anthropic",
-                "description": "Claude models provider",
-            },
-            {
-                "id": "elevenlabs",
-                "name": "ElevenLabs",
-                "description": "Voice synthesis provider",
-            },
-            {
-                "id": "azure",
-                "name": "Azure TTS",
-                "description": "Microsoft TTS provider",
-            },
-        ]
+        "success": True, 
+        "message": "Welcome to the Voice TTS Live2D Project API", 
+        "data": {
+            "api_url": f"{settings.SERVER_HOST}{settings.API_V1_STR}/",
+            "docs_url": f"{settings.SERVER_HOST}/api/docs"
+        }
     }
 
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Global exception handler."""
+    logger.error(f"Unhandled exception: {str(exc)}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "Internal server error",
+            "path": request.url.path
+        }
+    )
 
-# Run the FastAPI app if executed directly
+@app.get("/health")
+async def health_check() -> dict:
+    """Health check endpoint."""
+    return {
+        "status": "healthy",
+        "version": "1.0.0",
+        "environment": settings.ENV_NAME
+    }
+
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 8000))
-    host = os.getenv("HOST", "0.0.0.0")
-    uvicorn.run("main:app", host=host, port=port, reload=True)
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+        log_level=settings.LOG_LEVEL.lower(),
+        proxy_headers=True,
+        forwarded_allow_ips="*",
+        server_header=False,
+        date_header=False
+    )

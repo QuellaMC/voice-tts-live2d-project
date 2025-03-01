@@ -16,8 +16,7 @@ from sqlalchemy import (
     String,
     Text,
 )
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
 
@@ -175,3 +174,22 @@ class Message(Base):
 
     # Relationships
     conversation = relationship("Conversation", back_populates="messages")
+
+
+class Companion(Base):
+    """Model for AI companions."""
+
+    __tablename__ = "companions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    name = Column(String)
+    description = Column(Text, nullable=True)
+    personality = Column(Text, nullable=True)
+    voice_id = Column(String, nullable=True)
+    live2d_model = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, nullable=True, onupdate=datetime.utcnow)
+
+    # Relationships
+    user = relationship("User")

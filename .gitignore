@@ -63,3 +63,4 @@ uploads/
 data/
 logs/
 mongodb_data/ 
+backend/.coverage

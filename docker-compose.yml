@@ -16,12 +16,12 @@ services:
     environment:
       - HOST=0.0.0.0
       - PORT=8000
-      - DATABASE_URL=mongodb://mongodb:27017/anime_companion
       # API Key management and auth security defaults
       - VERIFY_API_KEYS=false
       - JWT_ALGORITHM=HS256
     depends_on:
-      - mongodb
+      - postgres
+      - redis
     restart: unless-stopped
     networks:
       - app-network
@@ -48,20 +48,38 @@ services:
       - app-network
     command: npm run dev
 
-  # MongoDB service for data storage
-  mongodb:
-    image: mongo:6.0
+  # PostgreSQL service for data storage
+  postgres:
+    image: postgres:14
     ports:
-      - "27017:27017"
+      - "5432:5432"
     volumes:
-      - mongodb_data:/data/db
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=anime_companion
     restart: unless-stopped
     networks:
       - app-network
 
+  # Redis service for caching and session management
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - app-network
+    command: redis-server --save 60 1 --loglevel warning
+
 # Shared persistent volumes
 volumes:
-  mongodb_data:
+  postgres_data:
+    driver: local
+  redis_data:
     driver: local
 
 # Shared networks

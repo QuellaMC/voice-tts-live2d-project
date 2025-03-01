@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  # Backend service for testing
+  backend:
+    environment:
+      - TESTING=true
+      - DATABASE_URL=sqlite:///:memory:
+      - TEST_DATABASE_URL=sqlite:///:memory:
+      - JWT_SECRET=test_secret_key
+      - API_KEY_ENCRYPTION_KEY=TEST_KEY_NOT_REAL_FOR_TESTING_ONLY_1234567890
+      - OPENAI_API_KEY=sk-test-key-not-real
+    command: >
+      sh -c "cd /app && 
+             chmod +x ./install_test_deps.sh && 
+             ./install_test_deps.sh && 
+             python -m pytest tests/test_main_app.py tests/api/v1/test_main.py tests/api/v1/test_auth.py::test_login tests/api/v1/test_knowledge.py tests/api/v1/test_root.py -v --cov=app.api.v1.endpoints --cov=main" 
