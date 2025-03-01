@@ -5,6 +5,9 @@ import warnings
 from typing import Any, Dict, Generator
 from unittest.mock import AsyncMock
 
+# Set testing environment variable
+os.environ["TESTING"] = "true"
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -48,6 +51,9 @@ engine = create_engine(
 )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+# Ensure settings are properly configured for testing
+assert settings.TESTING is True, "TESTING environment variable not properly set"
+assert settings.SQLALCHEMY_DATABASE_URI is not None, "Test database URL not properly configured"
 
 # Create a mock user class
 class MockUser:

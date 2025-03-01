@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     # Environment
     ENV_NAME: str = "development"
     DEBUG: bool = False
+    TESTING: bool = os.getenv("TESTING", "false").lower() == "true"
 
     # Application
     PROJECT_NAME: str = "Voice TTS Live2D"
@@ -46,21 +47,44 @@ class Settings(BaseSettings):
         raise ValueError(v)
 
     # Database
-    POSTGRES_SERVER: str
-    POSTGRES_USER: str
-    POSTGRES_PASSWORD: str
-    POSTGRES_DB: str
+    POSTGRES_SERVER: Optional[str] = None
+    POSTGRES_USER: Optional[str] = None
+    POSTGRES_PASSWORD: Optional[str] = None
+    POSTGRES_DB: Optional[str] = None
     POSTGRES_PORT: int = 5432
     SQLALCHEMY_DATABASE_URI: Optional[PostgresDsn] = None
     DB_POOL_SIZE: int = 10
     DB_MAX_OVERFLOW: int = 20
     DB_POOL_TIMEOUT: int = 30
 
+    @validator("POSTGRES_SERVER", "POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_DB", pre=True)
+    def set_db_fields_for_testing(cls, v: Optional[str], values: Dict[str, Any], **kwargs) -> Any:
+        """Set default values for database fields during testing."""
+        field_name = kwargs["field"].name
+        if values.get("TESTING", False) and v is None:
+            if field_name == "POSTGRES_SERVER":
+                return "localhost"
+            elif field_name == "POSTGRES_USER":
+                return "postgres"
+            elif field_name == "POSTGRES_PASSWORD":
+                return "postgres"
+            elif field_name == "POSTGRES_DB":
+                return "test_db"
+        return v
+
     @validator("SQLALCHEMY_DATABASE_URI", pre=True)
     def assemble_db_connection(cls, v: Optional[str], values: Dict[str, Any]) -> Any:
         """Assemble database connection URI."""
         if isinstance(v, str):
             return v
+        
+        # For testing, use the TEST_DATABASE_URL environment variable if available
+        if values.get("TESTING", False):
+            test_db_url = os.getenv("TEST_DATABASE_URL")
+            if test_db_url:
+                return test_db_url
+        
+        # Otherwise build the connection string from components
         return PostgresDsn.build(
             scheme="postgresql",
             user=values.get("POSTGRES_USER"),
@@ -98,9 +122,9 @@ class Settings(BaseSettings):
     METRICS_PASSWORD: Optional[str] = None
 
     # Security
-    JWT_SECRET: str
+    JWT_SECRET: str = os.getenv("JWT_SECRET", "test_secret_key_for_testing_only")
     JWT_ALGORITHM: str = "HS256"
-    API_KEY_ENCRYPTION_KEY: str
+    API_KEY_ENCRYPTION_KEY: str = os.getenv("API_KEY_ENCRYPTION_KEY", "test_key_for_testing_only_1234567890123456")
     SECURITY_BCRYPT_ROUNDS: int = 12
 
     # External Services
@@ -128,7 +152,7 @@ class Settings(BaseSettings):
         cls, v: Optional[str], values: Dict[str, Any]
     ) -> Optional[str]:
         """Validate Redis settings when rate limiting is enabled."""
-        if values.get("RATE_LIMIT_ENABLED", False) and not v:
+        if values.get("RATE_LIMIT_ENABLED", False) and not v and not values.get("TESTING", False):
             raise ValueError("Redis host is required when rate limiting is enabled")
         return v
 
@@ -146,6 +170,7 @@ class Settings(BaseSettings):
                 ]
             )
             and not v
+            and not values.get("TESTING", False)
         ):
             raise ValueError("SMTP host is required when email settings are provided")
         return v
@@ -161,6 +186,10 @@ settings = Settings()
 
 def validate_settings() -> None:
     """Validate that all required settings are properly configured."""
+    # Skip validation during testing
+    if settings.TESTING:
+        return
+        
     required_settings = [
         ("JWT_SECRET", "JWT secret key is required for authentication"),
         (

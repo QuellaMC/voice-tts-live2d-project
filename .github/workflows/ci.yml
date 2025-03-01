@@ -125,8 +125,8 @@ jobs:
           TESTING: "true"
           DATABASE_URL: "sqlite:///:memory:"
           TEST_DATABASE_URL: "sqlite:///:memory:"
-          JWT_SECRET: "test_secret_key"
-          API_KEY_ENCRYPTION_KEY: "TEST_KEY_NOT_REAL_FOR_TESTING_ONLY_1234567890"
+          JWT_SECRET: "test_secret_key_for_testing_only"
+          API_KEY_ENCRYPTION_KEY: "test_key_for_testing_only_1234567890123456"
           OPENAI_API_KEY: "sk-test-key-not-real"
       - name: Upload coverage report
         uses: codecov/codecov-action@v5
