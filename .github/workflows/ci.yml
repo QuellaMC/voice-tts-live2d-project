@@ -11,6 +11,9 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
+  repository-projects: write
+  packages: read
 
 jobs:
   lint-backend:
@@ -36,14 +39,32 @@ jobs:
       - name: Fix imports with isort
         run: |
           isort --profile black backend
+      - name: Install GitHub CLI
+        run: |
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+          sudo apt update
+          sudo apt install gh
       - name: Commit auto-formatted changes
         if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add backend
-          git diff --quiet && git diff --staged --quiet || git commit -m "Auto-format with black and isort" -a
-          git push
+          if ! git diff --quiet && ! git diff --staged --quiet; then
+            # Create a new branch for the changes
+            BRANCH_NAME="auto-format-$(date +%Y%m%d%H%M%S)"
+            git checkout -b $BRANCH_NAME
+            git commit -m "Auto-format with black and isort"
+            git push origin $BRANCH_NAME
+            
+            # Create a pull request using GitHub CLI or API
+            gh auth login --with-token <<< "${{ secrets.GITHUB_TOKEN }}"
+            gh pr create --title "Auto-format with black and isort" \
+                         --body "This PR contains auto-formatted code changes made by the CI workflow." \
+                         --base main \
+                         --head $BRANCH_NAME
+          fi
 
   lint-frontend:
     runs-on: ubuntu-latest
