@@ -3,15 +3,14 @@
 import logging
 import time
 from contextlib import contextmanager
-from typing import Generator, Any
-
-from sqlalchemy import create_engine, event, text
-from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.exc import SQLAlchemyError
-from tenacity import retry, stop_after_attempt, wait_exponential
+from typing import Any, Generator
 
 from app.core.config import settings
 from app.core.monitoring import record_db_operation
+from sqlalchemy import create_engine, event, text
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session, sessionmaker
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 logger = logging.getLogger(__name__)
 
@@ -28,21 +27,36 @@ engine = create_engine(
 # Create sessionmaker with class-wide scope
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+
 @event.listens_for(engine, "before_cursor_execute")
-def before_cursor_execute(conn: Any, cursor: Any, statement: str,
-                        parameters: Any, context: Any, executemany: bool) -> None:
+def before_cursor_execute(
+    conn: Any,
+    cursor: Any,
+    statement: str,
+    parameters: Any,
+    context: Any,
+    executemany: bool,
+) -> None:
     """Event listener to track database operation timing."""
-    conn.info.setdefault('query_start_time', []).append(time.time())
+    conn.info.setdefault("query_start_time", []).append(time.time())
+
 
 @event.listens_for(engine, "after_cursor_execute")
-def after_cursor_execute(conn: Any, cursor: Any, statement: str,
-                       parameters: Any, context: Any, executemany: bool) -> None:
+def after_cursor_execute(
+    conn: Any,
+    cursor: Any,
+    statement: str,
+    parameters: Any,
+    context: Any,
+    executemany: bool,
+) -> None:
     """Event listener to record database operation metrics."""
-    total = time.time() - conn.info['query_start_time'].pop(-1)
+    total = time.time() - conn.info["query_start_time"].pop(-1)
     # Extract operation type and table from the statement
     operation = statement.split()[0].lower()
     table = statement.split()[2] if len(statement.split()) > 2 else "unknown"
     record_db_operation(operation, table, total)
+
 
 @contextmanager
 def get_db() -> Generator[Session, None, None]:
@@ -57,10 +71,8 @@ def get_db() -> Generator[Session, None, None]:
     finally:
         db.close()
 
-@retry(
-    stop=stop_after_attempt(3),
-    wait=wait_exponential(multiplier=1, min=4, max=10)
-)
+
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
 def check_db_connection() -> bool:
     """Check database connection with retry logic."""
     try:
@@ -72,6 +84,7 @@ def check_db_connection() -> bool:
         logger.error(f"Failed to connect to database: {str(e)}")
         raise
 
+
 def cleanup_db() -> None:
     """Cleanup database resources on application shutdown."""
     try:
@@ -79,6 +92,7 @@ def cleanup_db() -> None:
         logger.info("Database connections cleaned up successfully")
     except Exception as e:
         logger.error(f"Error during database cleanup: {str(e)}")
+
 
 # Initialize connection pool on startup
 def init_db() -> None:
@@ -88,4 +102,4 @@ def init_db() -> None:
         logger.info("Database connection established successfully")
     except Exception as e:
         logger.error(f"Failed to initialize database: {str(e)}")
-        raise 
+        raise

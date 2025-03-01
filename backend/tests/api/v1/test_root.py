@@ -26,4 +26,4 @@ def test_health_endpoint(client):
     assert "data" in data
     assert "status" in data["data"]
     assert data["data"]["status"] == "healthy"
-    assert "version" in data["data"] 
+    assert "version" in data["data"]

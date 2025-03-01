@@ -1,8 +1,10 @@
 """Permissions service interface."""
 
 from abc import ABC, abstractmethod
-from typing import Optional, List, Dict, Any, Union
+from typing import Any, Dict, List, Optional, Union
+
 from sqlalchemy.orm import Session
+
 
 class IPermissionService(ABC):
     """Interface for permission services."""
@@ -13,27 +15,20 @@ class IPermissionService(ABC):
         user_id: int,
         resource_type: str,
         required_permission: str,
-        resource_id: Optional[int] = None
+        resource_id: Optional[int] = None,
     ) -> bool:
         """Check if user has permission for a resource."""
         pass
 
     @abstractmethod
     async def add_user_to_group(
-        self,
-        user_id: int,
-        group_id: int,
-        added_by: int
+        self, user_id: int, group_id: int, added_by: int
     ) -> None:
         """Add user to a group."""
         pass
 
     @abstractmethod
-    async def remove_user_from_group(
-        self,
-        user_id: int,
-        group_id: int
-    ) -> None:
+    async def remove_user_from_group(self, user_id: int, group_id: int) -> None:
         """Remove user from a group."""
         pass
 
@@ -44,7 +39,7 @@ class IPermissionService(ABC):
         resource_type: str,
         permissions: Dict[str, bool],
         resource_id: Optional[int] = None,
-        created_by: int = None
+        created_by: int = None,
     ) -> None:
         """Set permissions for a group on a resource."""
         pass
@@ -55,7 +50,7 @@ class IPermissionService(ABC):
         user_id: int,
         knowledge_id: int,
         action: str,
-        details: Optional[Dict[str, Any]] = None
+        details: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Log access to a resource."""
-        pass 
+        pass

@@ -7,4 +7,4 @@ __all__ = [
     "ILive2DService",
     "Live2DService",
     "live2d_service",
-] 
+]
