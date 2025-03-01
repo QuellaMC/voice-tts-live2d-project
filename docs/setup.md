@@ -28,7 +28,14 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-Create a `.env` file in the `backend` directory:
+Copy the example environment file and edit it with your own settings:
+
+```bash
+cp .env.example .env
+# Now edit .env with your preferred text editor
+```
+
+The `.env` file should contain the following settings (already present in the example file):
 
 ```
 # LLM API Configuration
@@ -71,6 +78,12 @@ npm install  # or: yarn install
 ```
 
 Create a `.env.local` file in the `frontend` directory:
+
+```bash
+# Create and edit .env.local with your preferred text editor
+```
+
+The `.env.local` file should contain:
 
 ```
 NEXT_PUBLIC_API_URL=http://localhost:8000
@@ -201,9 +214,62 @@ npm run dev  # or: yarn dev
 
 ### Using Docker (Optional)
 
+Before starting the Docker containers, make sure to copy and configure the environment file:
+
+```bash
+# Copy environment file
+cp .env.example .env
+
+# Edit the file with your preferred text editor to add your API keys and settings
+```
+
+Also create a `.env.local` file in the frontend directory:
+
+```bash
+# Create frontend/.env.local file
+mkdir -p frontend
+echo "NEXT_PUBLIC_API_URL=http://localhost:8000" > frontend/.env.local
+```
+
+Then start the Docker containers:
+
 ```bash
 docker-compose up
 ```
+
+This will start all the services defined in the `docker-compose.yml` file.
+
+### 4. Accessing the Application
+
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- API Documentation: http://localhost:8000/api/docs
+
+### 5. Development Workflow
+
+When making changes to the code while the Docker containers are running, you may need to restart the containers for the changes to take effect:
+
+```bash
+# Restart a specific service
+docker-compose restart backend
+
+# Or restart all services
+docker-compose restart
+```
+
+For frontend changes, the development server should automatically reload when files are changed.
+
+For backend changes, you may need to restart the backend service:
+
+```bash
+docker-compose restart backend
+```
+
+This is particularly important for changes to:
+- Route definitions
+- Dependency injections
+- Service implementations
+- Database models
 
 ## Configuration Options
 

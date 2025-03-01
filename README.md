@@ -19,8 +19,17 @@ An interactive AI-powered anime companion with custom voice synthesis and Live2D
    cd voice-tts-live2d-project
    ```
 
-2. **Set API keys in docker-compose.yml**
-   Edit the docker-compose.yml file and update environment variables with your API keys and custom endpoints.
+2. **Set up environment files**
+   ```bash
+   # Copy example environment file
+   cp .env.example .env
+   
+   # Create frontend environment file
+   mkdir -p frontend
+   echo "NEXT_PUBLIC_API_URL=http://localhost:8000" > frontend/.env.local
+   ```
+   
+   Edit the `.env` file to add your API keys and custom endpoints.
 
 3. **Start the development environment**
    ```bash
@@ -73,6 +82,51 @@ For detailed setup and configuration instructions, see the [Setup Guide](./docs/
 For architecture and design details, see the [Architecture Documentation](./docs/architecture.md).
 
 For the development roadmap, see the [Roadmap](./docs/roadmap.md).
+
+For a comprehensive API reference, see the [API Reference](./docs/api_reference.md).
+
+## API Endpoints
+
+The application provides several endpoints:
+
+- **Main Application Endpoints**:
+  - `http://localhost:8000/` - Welcome page with links to API and documentation
+  - `http://localhost:8000/health` - Health check endpoint
+
+- **API v1 Endpoints**:
+  - `http://localhost:8000/api/v1/` - API welcome page
+  - `http://localhost:8000/api/v1/health` - API health check endpoint
+  - `http://localhost:8000/api/v1/auth/*` - Authentication endpoints
+  - `http://localhost:8000/api/v1/knowledge/*` - Knowledge management endpoints
+
+- **API Documentation**:
+  - `http://localhost:8000/api/docs` - Interactive Swagger UI documentation
+
+## Testing
+
+The project includes a comprehensive testing framework for the backend:
+
+### Running Tests
+
+1. **Run tests in Docker**
+   ```bash
+   chmod +x run_tests_docker.sh
+   ./run_tests_docker.sh
+   ```
+
+2. **Run tests locally**
+   ```bash
+   cd backend
+   chmod +x run_tests.sh
+   ./run_tests.sh
+   ```
+
+3. **Run specific tests**
+   ```bash
+   docker-compose exec -e TESTING=true backend python -m pytest tests/api/v1/test_main.py -v
+   ```
+
+For more details about the testing framework, see the [Testing Documentation](./backend/tests/README.md).
 
 ## License
 
