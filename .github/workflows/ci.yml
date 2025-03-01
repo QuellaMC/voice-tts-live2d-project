@@ -63,12 +63,18 @@ jobs:
             git commit -m "Auto-format with black and isort"
             git push origin $BRANCH_NAME
             
-            # Create a pull request using GitHub CLI or API
-            gh auth login --with-token <<< "${{ secrets.GITHUB_TOKEN }}"
-            gh pr create --title "Auto-format with black and isort" \
-                         --body "This PR contains auto-formatted code changes made by the CI workflow." \
-                         --base main \
-                         --head $BRANCH_NAME
+            # Attempt to create a PR, but continue if it fails
+            echo "Branch $BRANCH_NAME has been pushed. A pull request can be created manually if needed."
+            if [ -n "${{ secrets.PAT_TOKEN }}" ]; then
+              echo "Attempting to create a pull request..."
+              gh auth login --with-token <<< "${{ secrets.PAT_TOKEN }}"
+              gh pr create --title "Auto-format with black and isort" \
+                           --body "This PR contains auto-formatted code changes made by the CI workflow." \
+                           --base main \
+                           --head $BRANCH_NAME || echo "PR creation failed. Please create a PR manually."
+            else
+              echo "No PAT_TOKEN secret found. Please create a PR manually from branch $BRANCH_NAME"
+            fi
           else
             echo "No changes detected after formatting"
           fi
