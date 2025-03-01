@@ -6,4 +6,4 @@ from app.services.base.service import BaseService
 __all__ = [
     "IBaseService",
     "BaseService",
-] 
+]

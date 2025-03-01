@@ -1,18 +1,17 @@
 """Security middleware and utilities."""
 
 import time
-from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
+from typing import Any, Dict, Optional
 
 import jwt
-from fastapi import HTTPException, Security, Depends, Request, status
-from fastapi.security import APIKeyHeader, HTTPBearer, HTTPAuthorizationCredentials
-from starlette.status import HTTP_403_FORBIDDEN
-from redis import Redis
-from cryptography.fernet import Fernet
-from passlib.context import CryptContext
-
 from app.core.config import settings
+from cryptography.fernet import Fernet
+from fastapi import Depends, HTTPException, Request, Security, status
+from fastapi.security import APIKeyHeader, HTTPAuthorizationCredentials, HTTPBearer
+from passlib.context import CryptContext
+from redis import Redis
+from starlette.status import HTTP_403_FORBIDDEN
 
 # Security schemes
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
@@ -26,7 +25,7 @@ if settings.REDIS_HOST:
         port=settings.REDIS_PORT,
         password=settings.REDIS_PASSWORD,
         db=settings.REDIS_DB,
-        decode_responses=True
+        decode_responses=True,
     )
 
 # Fernet instance for API key encryption
@@ -34,18 +33,21 @@ fernet = Fernet(settings.API_KEY_ENCRYPTION_KEY.encode())
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify password."""
     return pwd_context.verify(plain_password, hashed_password)
+
 
 def get_password_hash(password: str) -> str:
     """Get password hash."""
     return pwd_context.hash(password)
 
+
 def create_token(
     data: Dict[str, Any],
     expires_delta: Optional[timedelta] = None,
-    secret_key: str = settings.SECRET_KEY
+    secret_key: str = settings.SECRET_KEY,
 ) -> str:
     """Create JWT token."""
     to_encode = data.copy()
@@ -57,9 +59,9 @@ def create_token(
     encoded_jwt = jwt.encode(to_encode, secret_key, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
+
 def create_access_token(
-    data: Dict[str, Any],
-    expires_delta: Optional[timedelta] = None
+    data: Dict[str, Any], expires_delta: Optional[timedelta] = None
 ) -> str:
     """Create access token."""
     if expires_delta:
@@ -69,16 +71,12 @@ def create_access_token(
             minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
         )
     to_encode = data.copy()
-    to_encode.update({
-        "exp": expire,
-        "type": "access"
-    })
+    to_encode.update({"exp": expire, "type": "access"})
     encoded_jwt = jwt.encode(
-        to_encode,
-        settings.SECRET_KEY,
-        algorithm=settings.ALGORITHM
+        to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
     )
     return encoded_jwt
+
 
 def create_password_reset_token(email: str) -> str:
     """Create password reset token."""
@@ -86,16 +84,15 @@ def create_password_reset_token(email: str) -> str:
     return create_token(
         data={"sub": email, "type": "password_reset"},
         expires_delta=delta,
-        secret_key=settings.SECRET_KEY_PASSWORD_RESET
+        secret_key=settings.SECRET_KEY_PASSWORD_RESET,
     )
+
 
 def verify_password_reset_token(token: str) -> Optional[str]:
     """Verify password reset token."""
     try:
         decoded_token = jwt.decode(
-            token,
-            settings.SECRET_KEY_PASSWORD_RESET,
-            algorithms=[settings.ALGORITHM]
+            token, settings.SECRET_KEY_PASSWORD_RESET, algorithms=[settings.ALGORITHM]
         )
         if decoded_token["type"] != "password_reset":
             return None
@@ -103,14 +100,16 @@ def verify_password_reset_token(token: str) -> Optional[str]:
     except jwt.JWTError:
         return None
 
+
 def create_email_verification_token(email: str) -> str:
     """Create email verification token."""
     delta = timedelta(minutes=settings.EMAIL_VERIFICATION_TOKEN_EXPIRE_MINUTES)
     return create_token(
         data={"sub": email, "type": "email_verification"},
         expires_delta=delta,
-        secret_key=settings.SECRET_KEY_EMAIL_VERIFICATION
+        secret_key=settings.SECRET_KEY_EMAIL_VERIFICATION,
     )
+
 
 def verify_email_verification_token(token: str) -> Optional[str]:
     """Verify email verification token."""
@@ -118,7 +117,7 @@ def verify_email_verification_token(token: str) -> Optional[str]:
         decoded_token = jwt.decode(
             token,
             settings.SECRET_KEY_EMAIL_VERIFICATION,
-            algorithms=[settings.ALGORITHM]
+            algorithms=[settings.ALGORITHM],
         )
         if decoded_token["type"] != "email_verification":
             return None
@@ -126,13 +125,12 @@ def verify_email_verification_token(token: str) -> Optional[str]:
     except jwt.JWTError:
         return None
 
+
 async def verify_token(token: str) -> Dict[str, Any]:
     """Verify JWT token."""
     try:
         payload = jwt.decode(
-            token,
-            settings.SECRET_KEY,
-            algorithms=[settings.ALGORITHM]
+            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
         )
         if payload.get("type") != "access":
             raise HTTPException(
@@ -154,12 +152,12 @@ async def verify_token(token: str) -> Dict[str, Any]:
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+
 def get_api_key(api_key: str = Security(api_key_header)) -> str:
     """Validate API key."""
     if not api_key:
         raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN,
-            detail="API key is required"
+            status_code=HTTP_403_FORBIDDEN, detail="API key is required"
         )
     try:
         # Decrypt and verify API key
@@ -167,28 +165,25 @@ def get_api_key(api_key: str = Security(api_key_header)) -> str:
         # Add additional validation if needed
         return decrypted_key
     except Exception:
-        raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN,
-            detail="Invalid API key"
-        )
+        raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="Invalid API key")
+
 
 async def get_current_user(
-    request: Request,
-    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)
+    request: Request, credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)
 ) -> Dict:
     """Get current user from JWT token."""
     try:
         token = credentials.credentials
         # Check if token is blacklisted - moved to token service
         # We'll check this in the routes that need it
-        
+
         payload = await verify_token(token)
         return payload
     except Exception:
         raise HTTPException(
-            status_code=HTTP_403_FORBIDDEN,
-            detail="Could not validate credentials"
+            status_code=HTTP_403_FORBIDDEN, detail="Could not validate credentials"
         )
+
 
 def check_rate_limit(key: str) -> bool:
     """Check rate limiting for a given key."""
@@ -197,7 +192,7 @@ def check_rate_limit(key: str) -> bool:
 
     current = int(time.time())
     key = f"rate_limit:{key}"
-    
+
     try:
         # Use Redis pipeline for atomic operations
         pipe = redis_client.pipeline()
@@ -206,18 +201,21 @@ def check_rate_limit(key: str) -> bool:
         pipe.zadd(key, {str(current): current})
         pipe.expire(key, 60)  # Set TTL to clean up old keys
         results = pipe.execute()
-        
+
         request_count = results[1]
         return request_count < settings.RATE_LIMIT_PER_MINUTE
     except Exception:
         # If Redis is unavailable, default to allowing the request
         return True
 
+
 def encrypt_api_key(api_key: str) -> str:
     """Encrypt an API key."""
     return fernet.encrypt(api_key.encode()).decode()
 
+
 def generate_api_key() -> str:
     """Generate a new API key."""
     import secrets
-    return secrets.token_urlsafe(32) 
+
+    return secrets.token_urlsafe(32)

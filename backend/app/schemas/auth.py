@@ -1,22 +1,24 @@
 """Authentication schema models."""
 
-from pydantic import BaseModel, EmailStr, Field, validator
 from typing import Optional
+
+from pydantic import BaseModel, EmailStr, Field, validator
+
 
 class PasswordResetRequest(BaseModel):
     """Password reset request schema."""
+
     email: EmailStr = Field(..., description="Email address to send reset link to")
+
 
 class PasswordResetConfirm(BaseModel):
     """Password reset confirmation schema."""
+
     token: str = Field(..., description="Password reset token")
     new_password: str = Field(
-        ...,
-        min_length=8,
-        max_length=100,
-        description="New password"
+        ..., min_length=8, max_length=100, description="New password"
     )
-    
+
     @validator("new_password")
     def validate_password(cls, v):
         """Validate password complexity."""
@@ -30,6 +32,8 @@ class PasswordResetConfirm(BaseModel):
             raise ValueError("Password must contain at least one special character")
         return v
 
+
 class EmailVerificationRequest(BaseModel):
     """Email verification request schema."""
-    email: EmailStr = Field(..., description="Email address to verify") 
+
+    email: EmailStr = Field(..., description="Email address to verify")

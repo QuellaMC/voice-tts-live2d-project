@@ -2,6 +2,7 @@
 
 from abc import ABC, abstractmethod
 
+
 class ITokenService(ABC):
     """Interface for token services."""
 
@@ -18,4 +19,4 @@ class ITokenService(ABC):
     @abstractmethod
     async def cleanup_blacklist(self) -> None:
         """Clean up expired blacklisted tokens."""
-        pass 
+        pass

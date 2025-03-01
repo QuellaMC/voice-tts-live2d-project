@@ -30,4 +30,4 @@ def test_main_health_check():
     assert "status" in data
     assert data["status"] == "healthy"
     assert "version" in data
-    assert "environment" in data 
+    assert "environment" in data

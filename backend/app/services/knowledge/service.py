@@ -1,33 +1,41 @@
 """Knowledge service implementation."""
 
 import logging
-from typing import List, Optional, Dict, Any
-import numpy as np
-from sqlalchemy.orm import Session
-from fastapi import HTTPException
 from datetime import datetime, timedelta
-import openai
-from tenacity import retry, stop_after_attempt, wait_exponential
+from typing import Any, Dict, List, Optional
 
-from app.models.knowledge import Knowledge, Tag, Concept, KnowledgeAudit, knowledge_tags, knowledge_concepts
+import numpy as np
+import openai
+from app.core.config import settings
+from app.models.knowledge import (
+    Concept,
+    Knowledge,
+    KnowledgeAudit,
+    Tag,
+    knowledge_concepts,
+    knowledge_tags,
+)
 from app.schemas.knowledge import KnowledgeCreate, KnowledgeUpdate
 from app.services.base import BaseService
+from app.services.knowledge.concept import ConceptService
 from app.services.knowledge.interface import IKnowledgeService
 from app.services.knowledge.tag import TagService
-from app.services.knowledge.concept import ConceptService
-from app.core.config import settings
+from fastapi import HTTPException
+from sqlalchemy.orm import Session
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 logger = logging.getLogger(__name__)
 
-class KnowledgeService(BaseService[Knowledge, KnowledgeCreate, KnowledgeUpdate], IKnowledgeService):
+
+class KnowledgeService(
+    BaseService[Knowledge, KnowledgeCreate, KnowledgeUpdate], IKnowledgeService
+):
     """Service for managing knowledge base."""
 
     def __init__(self):
         """Initialize service with Knowledge model."""
         super().__init__(
-            Knowledge,
-            cache_prefix="knowledge",
-            cache_ttl=settings.CACHE_TTL
+            Knowledge, cache_prefix="knowledge", cache_ttl=settings.CACHE_TTL
         )
         self.tag_service = TagService()
         self.concept_service = ConceptService()
@@ -39,7 +47,7 @@ class KnowledgeService(BaseService[Knowledge, KnowledgeCreate, KnowledgeUpdate],
         *,
         obj_in: KnowledgeCreate,
         user_id: int,
-        embedding: Optional[List[float]] = None
+        embedding: Optional[List[float]] = None,
     ) -> Knowledge:
         """Create knowledge entry with tags and concepts."""
         try:
@@ -55,27 +63,27 @@ class KnowledgeService(BaseService[Knowledge, KnowledgeCreate, KnowledgeUpdate],
                 answer=obj_in.answer,
                 metadata=obj_in.metadata,
                 embedding=embedding,
-                created_by=str(user_id)
+                created_by=str(user_id),
             )
 
             # Add tags
             if obj_in.tags:
                 for tag_name in obj_in.tags:
                     tag = await self.tag_service.get_or_create(
-                        db,
-                        name=tag_name,
-                        user_id=user_id
+                        db, name=tag_name, user_id=user_id
                     )
                     db_obj.tags.append(tag)
 
             # Add concepts
             if obj_in.concepts:
                 for concept_path in obj_in.concepts:
-                    concept = await self.concept_service.get_by_path(db, path=concept_path)
+                    concept = await self.concept_service.get_by_path(
+                        db, path=concept_path
+                    )
                     if not concept:
                         raise HTTPException(
                             status_code=404,
-                            detail=f"Concept path '{concept_path}' not found"
+                            detail=f"Concept path '{concept_path}' not found",
                         )
                     db_obj.concepts.append(concept)
 
@@ -88,7 +96,7 @@ class KnowledgeService(BaseService[Knowledge, KnowledgeCreate, KnowledgeUpdate],
                 knowledge_id=db_obj.id,
                 user_id=user_id,
                 action="create",
-                details={"original": obj_in.dict()}
+                details={"original": obj_in.dict()},
             )
             db.add(audit)
             db.commit()
@@ -102,13 +110,11 @@ class KnowledgeService(BaseService[Knowledge, KnowledgeCreate, KnowledgeUpdate],
             db.rollback()
             logger.error(f"Error creating knowledge entry: {str(e)}")
             raise HTTPException(
-                status_code=500,
-                detail="Failed to create knowledge entry"
+                status_code=500, detail="Failed to create knowledge entry"
             )
 
     @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=4, max=10)
+        stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10)
     )
     async def _generate_embedding(self, text: str) -> List[float]:
         """Generate embedding for text using OpenAI API with caching."""
@@ -120,8 +126,7 @@ class KnowledgeService(BaseService[Knowledge, KnowledgeCreate, KnowledgeUpdate],
 
             # Generate new embedding
             response = await openai.Embedding.acreate(
-                input=text,
-                model="text-embedding-3-small"
+                input=text, model="text-embedding-3-small"
             )
             embedding = response.data[0].embedding
 
@@ -144,7 +149,7 @@ class KnowledgeService(BaseService[Knowledge, KnowledgeCreate, KnowledgeUpdate],
         limit: int = 5,
         min_similarity: float = 0.7,
         filter_tags: Optional[List[str]] = None,
-        filter_concepts: Optional[List[str]] = None
+        filter_concepts: Optional[List[str]] = None,
     ) -> List[Knowledge]:
         """Search for similar knowledge entries using vector similarity."""
         try:
@@ -158,7 +163,9 @@ class KnowledgeService(BaseService[Knowledge, KnowledgeCreate, KnowledgeUpdate],
             if filter_tags:
                 query = query.join(Knowledge.tags).filter(Tag.name.in_(filter_tags))
             if filter_concepts:
-                query = query.join(Knowledge.concepts).filter(Concept.name.in_(filter_concepts))
+                query = query.join(Knowledge.concepts).filter(
+                    Concept.name.in_(filter_concepts)
+                )
 
             # Get entries
             entries = query.all()
@@ -166,7 +173,9 @@ class KnowledgeService(BaseService[Knowledge, KnowledgeCreate, KnowledgeUpdate],
             # Calculate similarities
             similarities = []
             for entry in entries:
-                similarity = self._calculate_similarity(query_vector, np.array(entry.embedding))
+                similarity = self._calculate_similarity(
+                    query_vector, np.array(entry.embedding)
+                )
                 if similarity >= min_similarity:
                     similarities.append((entry, similarity))
 
@@ -184,8 +193,7 @@ class KnowledgeService(BaseService[Knowledge, KnowledgeCreate, KnowledgeUpdate],
         except Exception as e:
             logger.error(f"Error in similarity search: {str(e)}")
             raise HTTPException(
-                status_code=500,
-                detail="Failed to perform similarity search"
+                status_code=500, detail="Failed to perform similarity search"
             )
 
     def _calculate_similarity(self, vec1: np.ndarray, vec2: np.ndarray) -> float:
@@ -193,12 +201,7 @@ class KnowledgeService(BaseService[Knowledge, KnowledgeCreate, KnowledgeUpdate],
         return float(np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2)))
 
     async def update_with_audit(
-        self,
-        db: Session,
-        *,
-        db_obj: Knowledge,
-        obj_in: KnowledgeUpdate,
-        user_id: int
+        self, db: Session, *, db_obj: Knowledge, obj_in: KnowledgeUpdate, user_id: int
     ) -> Knowledge:
         """Update knowledge entry with audit trail."""
         try:
@@ -210,7 +213,7 @@ class KnowledgeService(BaseService[Knowledge, KnowledgeCreate, KnowledgeUpdate],
                 "answer": db_obj.answer,
                 "metadata": db_obj.metadata,
                 "tags": [tag.name for tag in db_obj.tags],
-                "concepts": [concept.name for concept in db_obj.concepts]
+                "concepts": [concept.name for concept in db_obj.concepts],
             }
 
             # Generate new embedding if content changed
@@ -222,9 +225,7 @@ class KnowledgeService(BaseService[Knowledge, KnowledgeCreate, KnowledgeUpdate],
                 db_obj.tags = []
                 for tag_name in obj_in.tags:
                     tag = await self.tag_service.get_or_create(
-                        db,
-                        name=tag_name,
-                        user_id=user_id
+                        db, name=tag_name, user_id=user_id
                     )
                     db_obj.tags.append(tag)
 
@@ -232,11 +233,13 @@ class KnowledgeService(BaseService[Knowledge, KnowledgeCreate, KnowledgeUpdate],
             if obj_in.concepts is not None:
                 db_obj.concepts = []
                 for concept_path in obj_in.concepts:
-                    concept = await self.concept_service.get_by_path(db, path=concept_path)
+                    concept = await self.concept_service.get_by_path(
+                        db, path=concept_path
+                    )
                     if not concept:
                         raise HTTPException(
                             status_code=404,
-                            detail=f"Concept path '{concept_path}' not found"
+                            detail=f"Concept path '{concept_path}' not found",
                         )
                     db_obj.concepts.append(concept)
 
@@ -250,8 +253,8 @@ class KnowledgeService(BaseService[Knowledge, KnowledgeCreate, KnowledgeUpdate],
                 action="update",
                 details={
                     "original": original_state,
-                    "changes": obj_in.dict(exclude_unset=True)
-                }
+                    "changes": obj_in.dict(exclude_unset=True),
+                },
             )
             db.add(audit)
             db.commit()
@@ -265,61 +268,50 @@ class KnowledgeService(BaseService[Knowledge, KnowledgeCreate, KnowledgeUpdate],
             db.rollback()
             logger.error(f"Error updating knowledge entry: {str(e)}")
             raise HTTPException(
-                status_code=500,
-                detail="Failed to update knowledge entry"
+                status_code=500, detail="Failed to update knowledge entry"
             )
 
-    async def get_by_topic(
-        self,
-        db: Session,
-        *,
-        topic: str
-    ) -> Optional[Knowledge]:
+    async def get_by_topic(self, db: Session, *, topic: str) -> Optional[Knowledge]:
         """Get knowledge entry by topic."""
         return db.query(Knowledge).filter(Knowledge.topic == topic).first()
 
     async def get_by_tag(
-        self,
-        db: Session,
-        *,
-        tag_name: str,
-        skip: int = 0,
-        limit: int = 100
+        self, db: Session, *, tag_name: str, skip: int = 0, limit: int = 100
     ) -> List[Knowledge]:
         """Get knowledge entries by tag."""
-        return db.query(Knowledge).join(Knowledge.tags).filter(
-            Tag.name == tag_name
-        ).offset(skip).limit(limit).all()
+        return (
+            db.query(Knowledge)
+            .join(Knowledge.tags)
+            .filter(Tag.name == tag_name)
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
 
     async def get_by_concept(
-        self,
-        db: Session,
-        *,
-        concept_path: str,
-        skip: int = 0,
-        limit: int = 100
+        self, db: Session, *, concept_path: str, skip: int = 0, limit: int = 100
     ) -> List[Knowledge]:
         """Get knowledge entries by concept path."""
         concept = await self.concept_service.get_by_path(db, path=concept_path)
         if not concept:
             return []
 
-        return db.query(Knowledge).join(Knowledge.concepts).filter(
-            Concept.id == concept.id
-        ).offset(skip).limit(limit).all()
+        return (
+            db.query(Knowledge)
+            .join(Knowledge.concepts)
+            .filter(Concept.id == concept.id)
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
 
-    async def cleanup_old_entries(
-        self,
-        db: Session,
-        *,
-        days: int = 30
-    ) -> None:
+    async def cleanup_old_entries(self, db: Session, *, days: int = 30) -> None:
         """Clean up knowledge entries not accessed in specified days."""
         try:
             cutoff = datetime.utcnow() - timedelta(days=days)
-            old_entries = db.query(Knowledge).filter(
-                Knowledge.last_accessed_at < cutoff
-            ).all()
+            old_entries = (
+                db.query(Knowledge).filter(Knowledge.last_accessed_at < cutoff).all()
+            )
 
             for entry in old_entries:
                 # Remove from cache
@@ -329,7 +321,7 @@ class KnowledgeService(BaseService[Knowledge, KnowledgeCreate, KnowledgeUpdate],
                     knowledge_id=entry.id,
                     user_id=None,
                     action="cleanup",
-                    details={"reason": "not accessed"}
+                    details={"reason": "not accessed"},
                 )
                 db.add(audit)
 
@@ -340,6 +332,5 @@ class KnowledgeService(BaseService[Knowledge, KnowledgeCreate, KnowledgeUpdate],
             db.rollback()
             logger.error(f"Error cleaning up old entries: {str(e)}")
             raise HTTPException(
-                status_code=500,
-                detail="Failed to clean up old entries"
-            ) 
+                status_code=500, detail="Failed to clean up old entries"
+            )

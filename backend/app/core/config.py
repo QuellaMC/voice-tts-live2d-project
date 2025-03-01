@@ -3,22 +3,24 @@
 import os
 import secrets
 from typing import Any, Dict, List, Optional, Union
-from pydantic import BaseSettings, PostgresDsn, validator, EmailStr, AnyHttpUrl, HttpUrl
+
+from pydantic import AnyHttpUrl, BaseSettings, EmailStr, HttpUrl, PostgresDsn, validator
+
 
 class Settings(BaseSettings):
     """Application settings with environment variable support."""
-    
+
     # Environment
     ENV_NAME: str = "development"
     DEBUG: bool = False
-    
+
     # Application
     PROJECT_NAME: str = "Voice TTS Live2D"
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api/v1"
     SERVER_NAME: str = "Voice TTS Live2D API"
     SERVER_HOST: AnyHttpUrl = "http://localhost:8000"
-    
+
     # Security
     SECRET_KEY: str = secrets.token_urlsafe(32)
     SECRET_KEY_PASSWORD_RESET: str = secrets.token_urlsafe(32)
@@ -27,13 +29,13 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int = 60
     EMAIL_VERIFICATION_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
-    
+
     # Frontend
     FRONTEND_URL: str = "http://localhost:3000"
-    
+
     # CORS
     BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
-    
+
     @validator("BACKEND_CORS_ORIGINS", pre=True)
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
         """Validate CORS origins."""
@@ -42,7 +44,7 @@ class Settings(BaseSettings):
         elif isinstance(v, (list, str)):
             return v
         raise ValueError(v)
-    
+
     # Database
     POSTGRES_SERVER: str
     POSTGRES_USER: str
@@ -75,7 +77,7 @@ class Settings(BaseSettings):
     REDIS_PASSWORD: Optional[str] = None
     CACHE_TTL: int = 60 * 5  # 5 minutes
     CACHE_MAX_SIZE: int = 10000
-    
+
     # Email
     SMTP_TLS: bool = True
     SMTP_PORT: Optional[int] = None
@@ -85,7 +87,7 @@ class Settings(BaseSettings):
     SMTP_FROM: Optional[EmailStr] = None
     EMAILS_FROM_EMAIL: Optional[EmailStr] = None
     EMAILS_FROM_NAME: Optional[str] = None
-    
+
     # Monitoring
     JAEGER_HOST: str = "localhost"
     JAEGER_PORT: int = 6831
@@ -94,7 +96,7 @@ class Settings(BaseSettings):
     METRICS_AUTH_REQUIRED: bool = True
     METRICS_USERNAME: Optional[str] = None
     METRICS_PASSWORD: Optional[str] = None
-    
+
     # Security
     JWT_SECRET: str
     JWT_ALGORITHM: str = "HS256"
@@ -122,20 +124,29 @@ class Settings(BaseSettings):
     LOG_FILE: Optional[str] = None
 
     @validator("REDIS_HOST")
-    def validate_redis_settings(cls, v: Optional[str], values: Dict[str, Any]) -> Optional[str]:
+    def validate_redis_settings(
+        cls, v: Optional[str], values: Dict[str, Any]
+    ) -> Optional[str]:
         """Validate Redis settings when rate limiting is enabled."""
         if values.get("RATE_LIMIT_ENABLED", False) and not v:
             raise ValueError("Redis host is required when rate limiting is enabled")
         return v
 
     @validator("SMTP_HOST")
-    def validate_email_settings(cls, v: Optional[str], values: Dict[str, Any]) -> Optional[str]:
+    def validate_email_settings(
+        cls, v: Optional[str], values: Dict[str, Any]
+    ) -> Optional[str]:
         """Validate email settings."""
-        if any([
-            values.get("SMTP_USER"),
-            values.get("SMTP_PASSWORD"),
-            values.get("EMAILS_FROM_EMAIL")
-        ]) and not v:
+        if (
+            any(
+                [
+                    values.get("SMTP_USER"),
+                    values.get("SMTP_PASSWORD"),
+                    values.get("EMAILS_FROM_EMAIL"),
+                ]
+            )
+            and not v
+        ):
             raise ValueError("SMTP host is required when email settings are provided")
         return v
 
@@ -143,14 +154,19 @@ class Settings(BaseSettings):
         case_sensitive = True
         env_file = ".env"
 
+
 # Global settings instance
 settings = Settings()
+
 
 def validate_settings() -> None:
     """Validate that all required settings are properly configured."""
     required_settings = [
         ("JWT_SECRET", "JWT secret key is required for authentication"),
-        ("API_KEY_ENCRYPTION_KEY", "API key encryption key is required for secure storage"),
+        (
+            "API_KEY_ENCRYPTION_KEY",
+            "API key encryption key is required for secure storage",
+        ),
         ("POSTGRES_SERVER", "Database server address is required"),
         ("POSTGRES_USER", "Database username is required"),
         ("POSTGRES_PASSWORD", "Database password is required"),
@@ -161,17 +177,21 @@ def validate_settings() -> None:
 
     # Only require metrics authentication if metrics auth is enabled and not in development
     if settings.METRICS_AUTH_REQUIRED and settings.ENV_NAME != "development":
-        required_settings.extend([
-            ("METRICS_USERNAME", "Metrics authentication username is required"),
-            ("METRICS_PASSWORD", "Metrics authentication password is required"),
-        ])
+        required_settings.extend(
+            [
+                ("METRICS_USERNAME", "Metrics authentication username is required"),
+                ("METRICS_PASSWORD", "Metrics authentication password is required"),
+            ]
+        )
 
     # Only require Redis if rate limiting is enabled and not in development
     if settings.RATE_LIMIT_ENABLED and settings.ENV_NAME != "development":
-        required_settings.extend([
-            ("REDIS_HOST", "Redis host is required for rate limiting"),
-            ("REDIS_PORT", "Redis port is required for rate limiting"),
-        ])
+        required_settings.extend(
+            [
+                ("REDIS_HOST", "Redis host is required for rate limiting"),
+                ("REDIS_PORT", "Redis port is required for rate limiting"),
+            ]
+        )
 
     missing_settings = []
     for setting, message in required_settings:
@@ -180,5 +200,6 @@ def validate_settings() -> None:
 
     if missing_settings:
         raise ValueError(
-            "Missing required settings:\n" + "\n".join(f"- {msg}" for msg in missing_settings)
-        ) 
+            "Missing required settings:\n"
+            + "\n".join(f"- {msg}" for msg in missing_settings)
+        )

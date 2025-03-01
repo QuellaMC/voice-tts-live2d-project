@@ -1,36 +1,41 @@
 """Test configuration and fixtures."""
 
 import os
-import pytest
 import warnings
-from typing import Generator, Dict, Any
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.pool import StaticPool
+from typing import Any, Dict, Generator
 from unittest.mock import AsyncMock
 
+import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import StaticPool
+
 # Suppress pkg_resources deprecation warning
-warnings.filterwarnings("ignore", category=DeprecationWarning, 
-                       message="pkg_resources is deprecated as an API")
+warnings.filterwarnings(
+    "ignore",
+    category=DeprecationWarning,
+    message="pkg_resources is deprecated as an API",
+)
+
+from app.core.config import settings
+from app.core.security import create_access_token, get_api_key, get_current_user
+from app.database.session import get_db
+from app.services.companion.service import CompanionService
+from app.services.live2d.service import Live2DService
+from app.services.tts.service import TTSService
+from app.services.user.service import UserService
+from main import app
+from tests.mocks import (
+    MockCompanionService,
+    MockEmbeddingsService,
+    MockLive2DService,
+    MockTTSService,
+    MockUserService,
+)
 
 # Import our test-specific models instead of app models
 from tests.models import Base
-from app.core.config import settings
-from main import app
-from app.database.session import get_db
-from app.core.security import create_access_token, get_current_user, get_api_key
-from tests.mocks import (
-    MockUserService,
-    MockTTSService,
-    MockLive2DService,
-    MockCompanionService,
-    MockEmbeddingsService
-)
-from app.services.user.service import UserService
-from app.services.tts.service import TTSService
-from app.services.live2d.service import Live2DService
-from app.services.companion.service import CompanionService
 
 # Test database URL - use in-memory SQLite for tests
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "sqlite:///:memory:")
@@ -43,12 +48,15 @@ engine = create_engine(
 )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+
 # Create a mock user class
 class MockUser:
     """Mock User class with the attributes needed by the auth endpoints."""
+
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
             setattr(self, key, value)
+
 
 @pytest.fixture(scope="session")
 def db() -> Generator[Session, None, None]:
@@ -61,9 +69,11 @@ def db() -> Generator[Session, None, None]:
         db.close()
         Base.metadata.drop_all(bind=engine)
 
+
 @pytest.fixture(scope="session")
 def client(db: Session) -> Generator[TestClient, None, None]:
     """Create a test client with the test database."""
+
     def override_get_db():
         try:
             yield db
@@ -72,7 +82,7 @@ def client(db: Session) -> Generator[TestClient, None, None]:
 
     # Override the get_db dependency
     app.dependency_overrides[get_db] = override_get_db
-    
+
     # Override the get_current_user dependency
     async def override_get_current_user():
         return {
@@ -80,19 +90,20 @@ def client(db: Session) -> Generator[TestClient, None, None]:
             "email": "testuser@test.com",
             "role": "user",
             "is_active": True,
-            "email_verified": True
+            "email_verified": True,
         }
-    
+
     # Override the get_api_key dependency
     def override_get_api_key():
         return "test-api-key"
-    
+
     # Add the overrides for authentication
     app.dependency_overrides[get_current_user] = override_get_current_user
     app.dependency_overrides[get_api_key] = override_get_api_key
-    
+
     with TestClient(app) as test_client:
         yield test_client
+
 
 @pytest.fixture(scope="session")
 def admin_token() -> str:
@@ -101,9 +112,10 @@ def admin_token() -> str:
         "sub": "1",  # User ID as string
         "email": "admin@test.com",
         "role": "admin",
-        "exp": 9999999999  # Far future expiration
+        "exp": 9999999999,  # Far future expiration
     }
     return create_access_token(data=admin_data)
+
 
 @pytest.fixture(scope="session")
 def user_token() -> str:
@@ -112,19 +124,22 @@ def user_token() -> str:
         "sub": "2",  # User ID as string
         "email": "testuser@test.com",
         "role": "user",
-        "exp": 9999999999  # Far future expiration
+        "exp": 9999999999,  # Far future expiration
     }
     return create_access_token(data=user_data)
+
 
 @pytest.fixture(scope="session")
 def admin_headers(admin_token: str) -> Dict[str, str]:
     """Return headers with admin token."""
     return {"Authorization": f"Bearer {admin_token}"}
 
+
 @pytest.fixture(scope="session")
 def user_headers(user_token: str) -> Dict[str, str]:
     """Return headers with user token."""
     return {"Authorization": f"Bearer {user_token}"}
+
 
 @pytest.fixture(scope="session")
 def test_user() -> Dict[str, Any]:
@@ -134,8 +149,9 @@ def test_user() -> Dict[str, Any]:
         "username": "testuser",
         "email": "testuser@test.com",
         "role": "user",
-        "is_active": True
+        "is_active": True,
     }
+
 
 @pytest.fixture(scope="session")
 def test_admin() -> Dict[str, Any]:
@@ -145,8 +161,9 @@ def test_admin() -> Dict[str, Any]:
         "username": "admin",
         "email": "admin@test.com",
         "role": "admin",
-        "is_active": True
+        "is_active": True,
     }
+
 
 @pytest.fixture
 def mock_user_service(monkeypatch):
@@ -156,6 +173,7 @@ def mock_user_service(monkeypatch):
     monkeypatch.setattr("app.api.v1.endpoints.users.UserService", lambda: mock_service)
     return mock_service
 
+
 @pytest.fixture
 def mock_tts_service(monkeypatch):
     """Mock the TTS service for testing."""
@@ -163,26 +181,36 @@ def mock_tts_service(monkeypatch):
     monkeypatch.setattr("app.api.v1.endpoints.tts.TTSService", lambda: mock_service)
     return mock_service
 
+
 @pytest.fixture
 def mock_live2d_service(monkeypatch):
     """Mock the Live2D service for testing."""
     mock_service = MockLive2DService()
-    monkeypatch.setattr("app.api.v1.endpoints.live2d.Live2DService", lambda: mock_service)
+    monkeypatch.setattr(
+        "app.api.v1.endpoints.live2d.Live2DService", lambda: mock_service
+    )
     return mock_service
+
 
 @pytest.fixture
 def mock_companion_service(monkeypatch):
     """Mock the Companion service for testing."""
     mock_service = MockCompanionService()
-    monkeypatch.setattr("app.api.v1.endpoints.companions.CompanionService", lambda: mock_service)
+    monkeypatch.setattr(
+        "app.api.v1.endpoints.companions.CompanionService", lambda: mock_service
+    )
     return mock_service
+
 
 @pytest.fixture
 def mock_embeddings_service(monkeypatch):
     """Mock the Embeddings service for testing."""
     mock_service = MockEmbeddingsService()
-    monkeypatch.setattr("app.services.knowledge.embeddings.embeddings_service", mock_service)
+    monkeypatch.setattr(
+        "app.services.knowledge.embeddings.embeddings_service", mock_service
+    )
     return mock_service
+
 
 @pytest.fixture
 def mock_knowledge_service():
@@ -196,8 +224,9 @@ def mock_knowledge_service():
     mock_service.delete = AsyncMock()
     mock_service.search_similar = AsyncMock()
     mock_service._generate_embedding = AsyncMock()
-    
+
     return mock_service
+
 
 @pytest.fixture
 def mock_tag_service():
@@ -205,5 +234,5 @@ def mock_tag_service():
     mock_service = AsyncMock()
     mock_service.get_multi = AsyncMock()
     mock_service.create_with_validation = AsyncMock()
-    
-    return mock_service 
+
+    return mock_service
