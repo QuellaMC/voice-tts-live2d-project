@@ -4,7 +4,7 @@
 export TESTING=true
 export TEST_DATABASE_URL="sqlite:///:memory:"
 export JWT_SECRET="test-jwt-secret-for-testing"
-export API_KEY_ENCRYPTION_KEY="c9nEMhGD6WwdecpgWMlUUxnFNRwKv5SDRXLCLZgYdRE="
+export API_KEY_ENCRYPTION_KEY="TEST_KEY_NOT_REAL_FOR_TESTING_ONLY_1234567890"
 export OPENAI_API_KEY="sk-test-key-not-real"
 
 # Install required dependencies if not already installed
