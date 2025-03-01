@@ -53,7 +53,10 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 
 # Ensure settings are properly configured for testing
 assert settings.TESTING is True, "TESTING environment variable not properly set"
-assert settings.SQLALCHEMY_DATABASE_URI is not None, "Test database URL not properly configured"
+assert (
+    settings.SQLALCHEMY_DATABASE_URI is not None
+), "Test database URL not properly configured"
+
 
 # Create a mock user class
 class MockUser:
