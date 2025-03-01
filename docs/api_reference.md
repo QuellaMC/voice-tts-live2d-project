@@ -117,7 +117,7 @@ Authenticates a user and returns an access token.
 **Response**:
 ```json
 {
-  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3MTY...",
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0X3VzZXIiLCJleHAiOjEyMzQ1Njc4OTB9.EXAMPLE_TEST_TOKEN_NOT_VALID",
   "token_type": "bearer",
   "expires_in": 1800
 }
@@ -139,7 +139,7 @@ Authorization: Bearer <your_token>
 **Response**:
 ```json
 {
-  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3MTY...",
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0X3VzZXIiLCJleHAiOjEyMzQ1Njc4OTB9.EXAMPLE_TEST_TOKEN_NOT_VALID",
   "token_type": "bearer",
   "expires_in": 1800
 }
