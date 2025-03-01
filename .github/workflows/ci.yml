@@ -50,12 +50,17 @@ jobs:
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add .
-          if ! git diff --quiet && ! git diff --staged --quiet; then
+          
+          # Check if there are any changes after formatting
+          if git status --porcelain | grep -q .; then
+            echo "Changes detected after formatting"
             # Create a new branch for the changes
             BRANCH_NAME="auto-format-$(date +%Y%m%d%H%M%S)"
             git checkout -b $BRANCH_NAME
-            git commit -m "Auto-format with black and isort" -a
+            
+            # Add all changes and commit
+            git add .
+            git commit -m "Auto-format with black and isort"
             git push origin $BRANCH_NAME
             
             # Create a pull request using GitHub CLI or API
@@ -64,6 +69,8 @@ jobs:
                          --body "This PR contains auto-formatted code changes made by the CI workflow." \
                          --base main \
                          --head $BRANCH_NAME
+          else
+            echo "No changes detected after formatting"
           fi
 
   lint-frontend:
