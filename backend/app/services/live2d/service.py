@@ -77,8 +77,8 @@ class Live2DService(ILive2DService):
             Dict with model details
         """
         try:
-            model_path = os.path.join(LIVE2D_MODELS_DIR, model_id)
-            if not os.path.exists(model_path) or not os.path.isdir(model_path):
+            model_path = os.path.normpath(os.path.join(LIVE2D_MODELS_DIR, model_id))
+            if not model_path.startswith(LIVE2D_MODELS_DIR) or not os.path.exists(model_path) or not os.path.isdir(model_path):
                 raise HTTPException(status_code=404, detail="Model not found")
 
             # Check if model.json exists
