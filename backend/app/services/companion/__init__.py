@@ -7,4 +7,4 @@ __all__ = [
     "ICompanionService",
     "CompanionService",
     "companion_service",
-] 
+]

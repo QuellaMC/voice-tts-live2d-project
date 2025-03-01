@@ -1,24 +1,24 @@
 """Base service class with common CRUD operations."""
 
-import logging
-from typing import TypeVar, Generic, Type, Optional, List, Dict, Any
-from datetime import timedelta
 import json
-
-from fastapi import HTTPException
-from sqlalchemy.orm import Session
-from sqlalchemy.exc import SQLAlchemyError
-from pydantic import BaseModel
-from redis import Redis
+import logging
+from datetime import timedelta
+from typing import Any, Dict, Generic, List, Optional, Type, TypeVar
 
 from app.core.config import settings
 from app.database.session import get_db
+from fastapi import HTTPException
+from pydantic import BaseModel
+from redis import Redis
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
 ModelType = TypeVar("ModelType")
 CreateSchemaType = TypeVar("CreateSchemaType", bound=BaseModel)
 UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
+
 
 class BaseService(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     """Base class for all services with common CRUD operations."""
@@ -28,7 +28,7 @@ class BaseService(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         model: Type[ModelType],
         redis_client: Optional[Redis] = None,
         cache_prefix: str = "",
-        cache_ttl: int = settings.CACHE_TTL
+        cache_ttl: int = settings.CACHE_TTL,
     ):
         """Initialize service with model and caching configuration."""
         self.model = model
@@ -59,7 +59,7 @@ class BaseService(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             self.redis_client.setex(
                 self._get_cache_key(key),
                 timedelta(seconds=self.cache_ttl),
-                json.dumps(value)
+                json.dumps(value),
             )
         except Exception as e:
             logger.warning(f"Cache set error: {str(e)}")
@@ -91,33 +91,23 @@ class BaseService(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             raise HTTPException(status_code=500, detail="Database error")
 
     async def get_multi(
-        self,
-        db: Session,
-        *,
-        skip: int = 0,
-        limit: int = 100,
-        filters: Dict = None
+        self, db: Session, *, skip: int = 0, limit: int = 100, filters: Dict = None
     ) -> List[ModelType]:
         """Get multiple records with optional filtering."""
         try:
             query = db.query(self.model)
-            
+
             if filters:
                 for key, value in filters.items():
                     if hasattr(self.model, key):
                         query = query.filter(getattr(self.model, key) == value)
-            
+
             return query.offset(skip).limit(limit).all()
         except SQLAlchemyError as e:
             logger.error(f"Database error in get_multi: {str(e)}")
             raise HTTPException(status_code=500, detail="Database error")
 
-    async def create(
-        self,
-        db: Session,
-        *,
-        obj_in: CreateSchemaType
-    ) -> ModelType:
+    async def create(self, db: Session, *, obj_in: CreateSchemaType) -> ModelType:
         """Create a new record."""
         try:
             obj_in_data = obj_in.dict()
@@ -134,11 +124,7 @@ class BaseService(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             raise HTTPException(status_code=500, detail="Database error")
 
     async def update(
-        self,
-        db: Session,
-        *,
-        db_obj: ModelType,
-        obj_in: UpdateSchemaType
+        self, db: Session, *, db_obj: ModelType, obj_in: UpdateSchemaType
     ) -> ModelType:
         """Update an existing record."""
         try:
@@ -185,4 +171,4 @@ class BaseService(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             return query.count()
         except SQLAlchemyError as e:
             logger.error(f"Database error in count: {str(e)}")
-            raise HTTPException(status_code=500, detail="Database error") 
+            raise HTTPException(status_code=500, detail="Database error")

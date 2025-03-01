@@ -1,19 +1,19 @@
 """Test-specific models for SQLite compatibility."""
 
 import enum
-from datetime import datetime
 import json
+from datetime import datetime
 
 from sqlalchemy import (
+    JSON,
     Boolean,
     Column,
     DateTime,
+    Float,
     ForeignKey,
     Integer,
     String,
     Text,
-    JSON,
-    Float,
 )
 from sqlalchemy.orm import declarative_base
 
@@ -67,11 +67,13 @@ class Knowledge(Base):
     question = Column(Text)
     answer = Column(Text)
     # Store embedding as JSON string instead of ARRAY for SQLite compatibility
-    embedding = Column(Text)  
+    embedding = Column(Text)
     meta_info = Column(JSON, default={})
     created_by = Column(String(100), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    updated_at = Column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
     last_accessed_at = Column(DateTime)
 
     # Helper methods for embedding conversion
@@ -79,7 +81,7 @@ class Knowledge(Base):
         """Convert embedding array to JSON string."""
         if embedding_array is not None:
             self.embedding = json.dumps(embedding_array)
-        
+
     def get_embedding(self):
         """Convert JSON string back to array."""
         if self.embedding:
@@ -97,7 +99,9 @@ class Tag(Base):
     description = Column(Text)
     created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    updated_at = Column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
 
 
 class Concept(Base):
@@ -112,7 +116,9 @@ class Concept(Base):
     description = Column(Text)
     created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"))
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    updated_at = Column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
 
 
 class Companion(Base):
@@ -128,4 +134,4 @@ class Companion(Base):
     voice_id = Column(String, nullable=True)
     live2d_model = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, nullable=True, onupdate=datetime.utcnow) 
+    updated_at = Column(DateTime, nullable=True, onupdate=datetime.utcnow)

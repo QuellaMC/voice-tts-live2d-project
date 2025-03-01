@@ -4,13 +4,13 @@ import logging
 from datetime import datetime
 from typing import Optional
 
-from redis import Redis
-from fastapi import HTTPException, status
-
 from app.core.config import settings
 from app.services.auth.interface import ITokenService
+from fastapi import HTTPException, status
+from redis import Redis
 
 logger = logging.getLogger(__name__)
+
 
 class TokenService(ITokenService):
     """Service for managing tokens."""
@@ -25,7 +25,7 @@ class TokenService(ITokenService):
                     port=settings.REDIS_PORT,
                     password=settings.REDIS_PASSWORD,
                     db=settings.REDIS_DB,
-                    decode_responses=True
+                    decode_responses=True,
                 )
             except Exception as e:
                 logger.error(f"Failed to connect to Redis: {str(e)}")
@@ -47,7 +47,7 @@ class TokenService(ITokenService):
             logger.error(f"Failed to blacklist token: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to process logout"
+                detail="Failed to process logout",
             )
 
     async def is_blacklisted(self, token: str) -> bool:
@@ -80,4 +80,5 @@ class TokenService(ITokenService):
         except Exception as e:
             logger.error(f"Failed to cleanup token blacklist: {str(e)}")
 
-token_service = TokenService() 
+
+token_service = TokenService()

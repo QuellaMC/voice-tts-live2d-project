@@ -11,16 +11,16 @@ def test_create_user(client):
     user_data = {
         "username": "newuser",
         "email": "newuser@example.com",
-        "password": "newpassword123"
+        "password": "newpassword123",
     }
-    
+
     response = client.post("/api/v1/users/", json=user_data)
     assert response.status_code == 201
     data = response.json()
     assert data["username"] == user_data["username"]
     assert data["email"] == user_data["email"]
     assert "id" in data
-    
+
     # Store user ID for later tests
     return data["id"]
 
@@ -38,7 +38,7 @@ def test_get_user(client, user_headers):
     """Test getting a specific user."""
     # First create a user
     user_id = test_create_user(client)
-    
+
     # Then get the user
     response = client.get(f"/api/v1/users/{user_id}", headers=user_headers)
     assert response.status_code == 200
@@ -52,14 +52,13 @@ def test_update_user(client, user_headers):
     """Test updating a user."""
     # First create a user
     user_id = test_create_user(client)
-    
+
     # Then update the user
-    update_data = {
-        "username": "updatedusername",
-        "email": "updated@example.com"
-    }
-    
-    response = client.put(f"/api/v1/users/{user_id}", json=update_data, headers=user_headers)
+    update_data = {"username": "updatedusername", "email": "updated@example.com"}
+
+    response = client.put(
+        f"/api/v1/users/{user_id}", json=update_data, headers=user_headers
+    )
     assert response.status_code == 200
     data = response.json()
     assert data["username"] == update_data["username"]
@@ -80,20 +79,22 @@ def test_change_password(client, user_headers):
     """Test changing password."""
     password_data = {
         "current_password": "testuser123",
-        "new_password": "newpassword456"
+        "new_password": "newpassword456",
     }
-    
-    response = client.post("/api/v1/users/me/change-password", json=password_data, headers=user_headers)
+
+    response = client.post(
+        "/api/v1/users/me/change-password", json=password_data, headers=user_headers
+    )
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "success"
-    
+
     # Verify login with new password works
     login_data = {
         "username": "testuser@test.com",  # Using email from fixture
-        "password": "newpassword456"
+        "password": "newpassword456",
     }
-    
+
     response = client.post("/api/v1/auth/login", data=login_data)
     assert response.status_code == 200
 
@@ -102,15 +103,15 @@ def test_deactivate_user(client, admin_headers):
     """Test deactivating a user (admin only)."""
     # First create a user
     user_id = test_create_user(client)
-    
+
     # Then deactivate the user
     response = client.post(f"/api/v1/users/{user_id}/deactivate", headers=admin_headers)
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "success"
-    
+
     # Verify user is deactivated
     response = client.get(f"/api/v1/users/{user_id}", headers=admin_headers)
     assert response.status_code == 200
     data = response.json()
-    assert data["is_active"] is False 
+    assert data["is_active"] is False

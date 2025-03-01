@@ -7,4 +7,4 @@ __all__ = [
     "ITTSService",
     "TTSService",
     "tts_service",
-] 
+]
