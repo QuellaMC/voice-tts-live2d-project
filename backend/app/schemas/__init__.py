@@ -1,38 +1,36 @@
 """Schemas package."""
 
+from app.schemas.companion import (
+    Companion,
+    CompanionBase,
+    CompanionCreate,
+    CompanionInDB,
+    CompanionInDBBase,
+    CompanionUpdate,
+)
+from app.schemas.knowledge import (
+    ConceptBase,
+    ConceptCreate,
+    ConceptInDB,
+    ConceptUpdate,
+    KnowledgeBase,
+    KnowledgeCreate,
+    KnowledgeInDB,
+    KnowledgeList,
+    KnowledgeResponse,
+    KnowledgeUpdate,
+    TagBase,
+    TagCreate,
+    TagInDB,
+    TagUpdate,
+)
 from app.schemas.user import (
     UserBase,
     UserCreate,
-    UserUpdate,
     UserInDB,
-    UserResponse,
     UserList,
-)
-
-from app.schemas.knowledge import (
-    KnowledgeBase,
-    KnowledgeCreate,
-    KnowledgeUpdate,
-    KnowledgeInDB,
-    KnowledgeResponse,
-    KnowledgeList,
-    TagBase,
-    TagCreate,
-    TagUpdate,
-    TagInDB,
-    ConceptBase,
-    ConceptCreate,
-    ConceptUpdate,
-    ConceptInDB,
-)
-
-from app.schemas.companion import (
-    CompanionBase,
-    CompanionCreate,
-    CompanionUpdate,
-    CompanionInDBBase,
-    Companion,
-    CompanionInDB,
+    UserResponse,
+    UserUpdate,
 )
 
 __all__ = [
@@ -65,4 +63,4 @@ __all__ = [
     "CompanionInDBBase",
     "Companion",
     "CompanionInDB",
-] 
+]

@@ -3,21 +3,20 @@ Dependencies for FastAPI route handlers.
 This module provides dependency functions for authentication and API key management.
 """
 
-import os
 import logging
+import os
 from datetime import datetime, timedelta
-from typing import Dict, Optional, Tuple
 from functools import lru_cache
-
-from fastapi import Depends, HTTPException, status, Request
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError, jwt
-from sqlalchemy.orm import Session
-from sqlalchemy.exc import SQLAlchemyError
+from typing import Dict, Optional, Tuple
 
 from app.database.session import get_db
-from app.models.user import User
 from app.models.models import UserRole
+from app.models.user import User
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError, jwt
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -31,7 +30,10 @@ if not JWT_SECRET:
     raise ValueError("JWT_SECRET environment variable is not set")
 
 JWT_ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))  # 24 hours
+ACCESS_TOKEN_EXPIRE_MINUTES = int(
+    os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440")
+)  # 24 hours
+
 
 def create_access_token(data: Dict) -> str:
     """Create a JWT access token with expiration."""
@@ -45,8 +47,9 @@ def create_access_token(data: Dict) -> str:
         logger.error(f"Error creating access token: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Could not create access token"
+            detail="Could not create access token",
         )
+
 
 @lru_cache(maxsize=1000)
 def decode_token(token: str) -> Dict:
@@ -65,13 +68,14 @@ def decode_token(token: str) -> Dict:
         logger.error(f"Error decoding token: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error processing authentication token"
+            detail="Error processing authentication token",
         )
+
 
 async def get_current_user(
     request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ) -> User:
     """Dependency to get the current authenticated user."""
     try:
@@ -119,12 +123,11 @@ async def get_current_user(
         logger.error(f"Error in get_current_user: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Internal server error"
+            detail="Internal server error",
         )
 
-async def get_current_admin(
-    current_user: User = Depends(get_current_user)
-) -> User:
+
+async def get_current_admin(current_user: User = Depends(get_current_user)) -> User:
     """Dependency to ensure the current user is an admin."""
     if current_user.role != UserRole.ADMIN:
         logger.warning(f"Non-admin user attempted admin action: {current_user.id}")
@@ -135,9 +138,9 @@ async def get_current_admin(
 
     return current_user
 
+
 async def validate_api_key_access(
-    provider: str,
-    current_user: User = Depends(get_current_user)
+    provider: str, current_user: User = Depends(get_current_user)
 ) -> Tuple[bool, User]:
     """
     Validate that a user has access to manage API keys for a provider.
@@ -153,8 +156,7 @@ async def validate_api_key_access(
         if provider not in valid_providers:
             logger.warning(f"Invalid API provider requested: {provider}")
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid API provider"
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid API provider"
             )
 
         # For now, allow all authenticated users to manage their own keys
@@ -165,5 +167,5 @@ async def validate_api_key_access(
         logger.error(f"Error validating API key access: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Error validating API key access"
+            detail="Error validating API key access",
         )
