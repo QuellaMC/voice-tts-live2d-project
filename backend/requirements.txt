@@ -22,7 +22,7 @@ motor==3.2.0  # MongoDB driver
 redis==5.0.1  # Redis for caching and session management
 
 # LLM Integration
-openai==0.28.0
+openai==1.65.2
 anthropic==0.47.1
 langchain==0.2.5
 
