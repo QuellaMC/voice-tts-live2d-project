@@ -1,5 +1,6 @@
 """Security middleware and utilities."""
 
+import base64
 import time
 from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
@@ -28,8 +29,24 @@ if settings.REDIS_HOST:
         decode_responses=True,
     )
 
+# Prepare the API key encryption key
+def prepare_fernet_key(key: str) -> bytes:
+    """Prepare a Fernet key from a string, ensuring it's valid base64."""
+    if settings.TESTING:
+        # For testing, convert any string to a valid Fernet key
+        # A valid Fernet key is 32 bytes, base64-encoded with URL-safe alphabet
+        key_bytes = key.encode('utf-8')
+        # Use the key as seed to generate 32 bytes
+        import hashlib
+        key_bytes = hashlib.sha256(key_bytes).digest()
+        # Base64 encode with URL-safe alphabet
+        return base64.urlsafe_b64encode(key_bytes)
+    else:
+        # In production, we expect a proper Fernet key
+        return key.encode()
+
 # Fernet instance for API key encryption
-fernet = Fernet(settings.API_KEY_ENCRYPTION_KEY.encode())
+fernet = Fernet(prepare_fernet_key(settings.API_KEY_ENCRYPTION_KEY))
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
