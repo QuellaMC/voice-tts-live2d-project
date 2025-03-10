@@ -52,7 +52,7 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: Optional[str] = None
     POSTGRES_DB: Optional[str] = None
     POSTGRES_PORT: int = 5432
-    SQLALCHEMY_DATABASE_URI: Optional[PostgresDsn] = None
+    SQLALCHEMY_DATABASE_URI: Optional[Union[PostgresDsn, str]] = None
     DB_POOL_SIZE: int = 10
     DB_MAX_OVERFLOW: int = 20
     DB_POOL_TIMEOUT: int = 30
@@ -76,12 +76,18 @@ class Settings(BaseSettings):
     def assemble_db_connection(cls, v: Optional[str], values: Dict[str, Any]) -> Any:
         """Assemble database connection URI."""
         if isinstance(v, str):
+            # If we're testing and using SQLite, don't validate as PostgresDsn
+            if values.get("TESTING", False) and v and v.startswith("sqlite:"):
+                return v
             return v
         
         # For testing, use the TEST_DATABASE_URL environment variable if available
         if values.get("TESTING", False):
             test_db_url = os.getenv("TEST_DATABASE_URL")
             if test_db_url:
+                # If using SQLite for tests, return as is
+                if test_db_url.startswith("sqlite:"):
+                    return test_db_url
                 return test_db_url
         
         # Otherwise build the connection string from components
