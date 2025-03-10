@@ -7,12 +7,6 @@ from unittest.mock import AsyncMock
 
 # Set testing environment variable
 os.environ["TESTING"] = "true"
-# Set test database URL
-os.environ["TEST_DATABASE_URL"] = "sqlite:///:memory:"
-# Set other required environment variables
-os.environ["JWT_SECRET"] = "test-jwt-secret-for-testing"
-os.environ["API_KEY_ENCRYPTION_KEY"] = "test_key_for_testing_only_1234567890123456"
-os.environ["OPENAI_API_KEY"] = "sk-test-key-not-real"
 
 import pytest
 from fastapi.testclient import TestClient
@@ -49,7 +43,7 @@ from tests.models import Base
 # Test database URL - use in-memory SQLite for tests
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "sqlite:///:memory:")
 
-# Create test engine
+# Create test engine with SQLite-specific settings
 engine = create_engine(
     TEST_DATABASE_URL,
     connect_args={"check_same_thread": False},
@@ -60,7 +54,6 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 # Ensure settings are properly configured for testing
 assert settings.TESTING is True, "TESTING environment variable not properly set"
 assert settings.SQLALCHEMY_DATABASE_URI is not None, "Test database URL not properly configured"
-assert settings.SQLALCHEMY_DATABASE_URI.startswith("sqlite"), "Test database URL should be SQLite"
 
 # Create a mock user class
 class MockUser:

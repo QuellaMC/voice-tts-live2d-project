@@ -3,7 +3,7 @@
 import logging
 import time
 from contextlib import contextmanager
-from typing import Any, Generator
+from typing import Any, Dict, Generator
 
 from app.core.config import settings
 from app.core.monitoring import record_db_operation
@@ -14,14 +14,33 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 
 logger = logging.getLogger(__name__)
 
-# Create database engine with connection pooling
+# Create engine configuration based on database type
+def get_engine_args() -> Dict[str, Any]:
+    """Get database engine arguments based on database type."""
+    if settings.TESTING and settings.SQLALCHEMY_DATABASE_URI and "sqlite" in settings.SQLALCHEMY_DATABASE_URI:
+        # SQLite-specific configuration
+        return {
+            "pool_pre_ping": True,
+            "pool_recycle": 3600,  # Recycle connections after 1 hour
+            # SQLite doesn't support these options
+            # "pool_size": settings.DB_POOL_SIZE,
+            # "max_overflow": settings.DB_MAX_OVERFLOW,
+            # "pool_timeout": settings.DB_POOL_TIMEOUT,
+        }
+    else:
+        # PostgreSQL configuration
+        return {
+            "pool_pre_ping": True,
+            "pool_size": settings.DB_POOL_SIZE,
+            "max_overflow": settings.DB_MAX_OVERFLOW,
+            "pool_timeout": settings.DB_POOL_TIMEOUT,
+            "pool_recycle": 3600,  # Recycle connections after 1 hour
+        }
+
+# Create database engine with appropriate connection pooling
 engine = create_engine(
     settings.SQLALCHEMY_DATABASE_URI,
-    pool_pre_ping=True,
-    pool_size=settings.DB_POOL_SIZE,
-    max_overflow=settings.DB_MAX_OVERFLOW,
-    pool_timeout=settings.DB_POOL_TIMEOUT,
-    pool_recycle=3600,  # Recycle connections after 1 hour
+    **get_engine_args()
 )
 
 # Create sessionmaker with class-wide scope
