@@ -57,8 +57,12 @@ class Settings(BaseSettings):
     DB_MAX_OVERFLOW: int = 20
     DB_POOL_TIMEOUT: int = 30
 
-    @validator("POSTGRES_SERVER", "POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_DB", pre=True)
-    def set_db_fields_for_testing(cls, v: Optional[str], values: Dict[str, Any], **kwargs) -> Any:
+    @validator(
+        "POSTGRES_SERVER", "POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_DB", pre=True
+    )
+    def set_db_fields_for_testing(
+        cls, v: Optional[str], values: Dict[str, Any], **kwargs
+    ) -> Any:
         """Set default values for database fields during testing."""
         field_name = kwargs["field"].name
         if values.get("TESTING", False) and v is None:
@@ -80,7 +84,7 @@ class Settings(BaseSettings):
             if values.get("TESTING", False) and v and v.startswith("sqlite:"):
                 return v
             return v
-        
+
         # For testing, use the TEST_DATABASE_URL environment variable if available
         if values.get("TESTING", False):
             test_db_url = os.getenv("TEST_DATABASE_URL")
@@ -89,7 +93,7 @@ class Settings(BaseSettings):
                 if test_db_url.startswith("sqlite:"):
                     return test_db_url
                 return test_db_url
-        
+
         # Otherwise build the connection string from components
         return PostgresDsn.build(
             scheme="postgresql",
@@ -130,7 +134,9 @@ class Settings(BaseSettings):
     # Security
     JWT_SECRET: str = os.getenv("JWT_SECRET", "test_secret_key_for_testing_only")
     JWT_ALGORITHM: str = "HS256"
-    API_KEY_ENCRYPTION_KEY: str = os.getenv("API_KEY_ENCRYPTION_KEY", "test_key_for_testing_only_1234567890123456")
+    API_KEY_ENCRYPTION_KEY: str = os.getenv(
+        "API_KEY_ENCRYPTION_KEY", "test_key_for_testing_only_1234567890123456"
+    )
     SECURITY_BCRYPT_ROUNDS: int = 12
 
     # External Services
@@ -158,7 +164,11 @@ class Settings(BaseSettings):
         cls, v: Optional[str], values: Dict[str, Any]
     ) -> Optional[str]:
         """Validate Redis settings when rate limiting is enabled."""
-        if values.get("RATE_LIMIT_ENABLED", False) and not v and not values.get("TESTING", False):
+        if (
+            values.get("RATE_LIMIT_ENABLED", False)
+            and not v
+            and not values.get("TESTING", False)
+        ):
             raise ValueError("Redis host is required when rate limiting is enabled")
         return v
 
@@ -195,7 +205,7 @@ def validate_settings() -> None:
     # Skip validation during testing
     if settings.TESTING:
         return
-        
+
     required_settings = [
         ("JWT_SECRET", "JWT secret key is required for authentication"),
         (
