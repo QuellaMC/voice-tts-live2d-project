@@ -19,7 +19,7 @@ sqlalchemy>=1.4.0
 alembic>=1.7.0
 psycopg2-binary>=2.9.0  # PostgreSQL adapter
 motor==3.2.0  # MongoDB driver
-redis==5.0.1  # Redis for caching and session management
+redis==5.2.1  # Redis for caching and session management
 
 # LLM Integration
 openai==1.65.5
