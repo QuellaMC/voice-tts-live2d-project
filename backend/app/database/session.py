@@ -14,10 +14,15 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 
 logger = logging.getLogger(__name__)
 
+
 # Create engine configuration based on database type
 def get_engine_args() -> Dict[str, Any]:
     """Get database engine arguments based on database type."""
-    if settings.TESTING and settings.SQLALCHEMY_DATABASE_URI and "sqlite" in settings.SQLALCHEMY_DATABASE_URI:
+    if (
+        settings.TESTING
+        and settings.SQLALCHEMY_DATABASE_URI
+        and "sqlite" in settings.SQLALCHEMY_DATABASE_URI
+    ):
         # SQLite-specific configuration
         return {
             "pool_pre_ping": True,
@@ -37,11 +42,9 @@ def get_engine_args() -> Dict[str, Any]:
             "pool_recycle": 3600,  # Recycle connections after 1 hour
         }
 
+
 # Create database engine with appropriate connection pooling
-engine = create_engine(
-    settings.SQLALCHEMY_DATABASE_URI,
-    **get_engine_args()
-)
+engine = create_engine(settings.SQLALCHEMY_DATABASE_URI, **get_engine_args())
 
 # Create sessionmaker with class-wide scope
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
