@@ -58,7 +58,7 @@ setuptools>=65.5.1  # Updated to fix pkg_resources deprecation warning
 # Monitoring
 opentelemetry-api==1.21.0
 opentelemetry-sdk==1.21.0
-opentelemetry-exporter-otlp==1.21.0  # OTLP exporter instead of Jaeger
+opentelemetry-exporter-otlp==1.31.0  # OTLP exporter instead of Jaeger
 opentelemetry-instrumentation-fastapi==0.42b0
 opentelemetry-instrumentation-sqlalchemy==0.42b0
 
