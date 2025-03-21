@@ -9,12 +9,12 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@chakra-ui/react": "^3.8.1",
+    "@chakra-ui/react": "^2.8.0",
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
     "@pixi/react": "^7.1.0",
     "axios": "^1.5.0",
-    "framer-motion": "^12.4.7",
+    "framer-motion": "^10.16.4",
     "next": "15.2.2",
     "pixi-live2d-display": "^0.4.0",
     "pixi.js": "^7.2.4",
