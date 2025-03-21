@@ -35,7 +35,7 @@ def prepare_fernet_key(key: str) -> bytes:
     """Prepare a Fernet key from a string, ensuring it's valid base64."""
     # A valid Fernet key is 32 bytes, base64-encoded with URL-safe alphabet
     import hashlib
-    
+
     try:
         # First try to decode it directly to check if it's a valid Fernet key
         decoded = base64.urlsafe_b64decode(key.encode())
@@ -45,7 +45,7 @@ def prepare_fernet_key(key: str) -> bytes:
     except Exception:
         # Not a valid base64 or not 32 bytes when decoded
         pass
-        
+
     # Use the key as seed to generate 32 bytes
     key_bytes = key.encode("utf-8")
     key_bytes = hashlib.sha256(key_bytes).digest()
