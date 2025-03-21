@@ -39,8 +39,8 @@ def upgrade() -> None:
         op.create_table(
             "users",
             sa.Column("id", sa.Integer(), nullable=False),
-            sa.Column("username", sa.String(100), nullable=False),
             sa.Column("email", sa.String(255), nullable=False),
+            sa.Column("full_name", sa.String(255), nullable=True),
             sa.Column("hashed_password", sa.String(255), nullable=False),
             sa.Column(
                 "role",
@@ -57,6 +57,13 @@ def upgrade() -> None:
                 comment="Whether the user account is active",
             ),
             sa.Column(
+                "is_superuser",
+                sa.Boolean(),
+                nullable=False,
+                server_default="false",
+                comment="Whether the user has superuser privileges",
+            ),
+            sa.Column(
                 "created_at",
                 sa.DateTime(),
                 nullable=False,
@@ -64,14 +71,14 @@ def upgrade() -> None:
                 comment="Timestamp when the user was created",
             ),
             sa.Column(
-                "last_login",
+                "updated_at",
                 sa.DateTime(),
-                nullable=True,
-                comment="Timestamp of last login",
+                nullable=False,
+                server_default=sa.text("now()"),
+                comment="Timestamp when the user was last updated",
             ),
             sa.PrimaryKeyConstraint("id"),
             sa.CheckConstraint("role IN ('admin', 'user')", name="valid_role_check"),
-            sa.CheckConstraint("length(username) >= 3", name="username_length_check"),
             sa.CheckConstraint(
                 "email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$'",
                 name="email_format_check",
@@ -80,7 +87,6 @@ def upgrade() -> None:
 
         # Create indexes with validation
         for index_name, column in [
-            ("ix_users_username", "username"),
             ("ix_users_email", "email"),
         ]:
             if index_name not in Inspector.from_engine(op.get_bind()).get_indexes(
@@ -99,7 +105,7 @@ def downgrade() -> None:
     """Remove users table and related objects."""
     try:
         # Drop indexes first
-        for index_name in ["ix_users_email", "ix_users_username"]:
+        for index_name in ["ix_users_email"]:
             op.drop_index(index_name)
             logger.info(f"Dropped index {index_name}")
 

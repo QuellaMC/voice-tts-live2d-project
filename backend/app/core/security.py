@@ -33,19 +33,24 @@ if settings.REDIS_HOST:
 # Prepare the API key encryption key
 def prepare_fernet_key(key: str) -> bytes:
     """Prepare a Fernet key from a string, ensuring it's valid base64."""
-    if settings.TESTING:
-        # For testing, convert any string to a valid Fernet key
-        # A valid Fernet key is 32 bytes, base64-encoded with URL-safe alphabet
-        key_bytes = key.encode("utf-8")
-        # Use the key as seed to generate 32 bytes
-        import hashlib
-
-        key_bytes = hashlib.sha256(key_bytes).digest()
-        # Base64 encode with URL-safe alphabet
-        return base64.urlsafe_b64encode(key_bytes)
-    else:
-        # In production, we expect a proper Fernet key
-        return key.encode()
+    # A valid Fernet key is 32 bytes, base64-encoded with URL-safe alphabet
+    import hashlib
+    
+    try:
+        # First try to decode it directly to check if it's a valid Fernet key
+        decoded = base64.urlsafe_b64decode(key.encode())
+        if len(decoded) == 32:
+            # It's already a valid Fernet key
+            return key.encode()
+    except Exception:
+        # Not a valid base64 or not 32 bytes when decoded
+        pass
+        
+    # Use the key as seed to generate 32 bytes
+    key_bytes = key.encode("utf-8")
+    key_bytes = hashlib.sha256(key_bytes).digest()
+    # Base64 encode with URL-safe alphabet
+    return base64.urlsafe_b64encode(key_bytes)
 
 
 # Fernet instance for API key encryption

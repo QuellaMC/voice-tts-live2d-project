@@ -11,9 +11,9 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "add_groups_and_permissions"
-down_revision = "initial"
+down_revision = "create_users_table"
 branch_labels = None
-depends_on = None
+depends_on = "initial"
 
 
 def upgrade() -> None:

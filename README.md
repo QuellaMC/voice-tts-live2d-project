@@ -2,6 +2,10 @@
 
 An interactive AI-powered anime companion with custom voice synthesis and Live2D animations.
 
+> **⚠️ Note:** This project is still in active development and not yet production-ready. Features may be incomplete or subject to change.
+> 
+> This project represents my first attempt at learning how to build a fullstack application with generative AI technologies.
+
 ## Features
 
 - **Intelligent Conversations**: Powered by LLMs (GPT/Claude/Mistral) with custom knowledge base integration
@@ -36,13 +40,20 @@ An interactive AI-powered anime companion with custom voice synthesis and Live2D
    docker-compose up
    ```
 
-4. **Create an admin account**
+4. **Initialize the database**
    ```bash
-   cd scripts
-   python create_admin.py --username admin
+   docker-compose exec backend alembic upgrade head
+   ```
+   
+   This step creates all necessary database tables and relationships. It's required for first-time setup or after pulling updates with database changes.
+
+5. **Create an admin account**
+   ```bash
+   # Create admin account from within the backend container
+   docker-compose exec backend python scripts/create_admin.py --username admin --password secure_password
    ```
 
-5. **Access the application**
+6. **Access the application**
    - Frontend: http://localhost:3000
    - Backend API: http://localhost:8000
 
@@ -58,13 +69,14 @@ An interactive AI-powered anime companion with custom voice synthesis and Live2D
 - LLM integration (OpenAI, Anthropic, or local models)
 - TTS services (ElevenLabs, Microsoft Azure, etc.)
 - RVC for voice conversion
-- MongoDB for data storage
+- PostgreSQL for data storage
+- Redis for caching and session management
 - Secure API key management and encryption
 
 ## Project Structure
 
 ```
-ai-anime-companion/
+voice-tts-live2d-project/
 ├── frontend/               # React/Next.js frontend application
 ├── backend/                # FastAPI backend server
 ├── docs/                   # Documentation
@@ -77,7 +89,7 @@ ai-anime-companion/
 
 ## Documentation
 
-For detailed setup and configuration instructions, see the [Setup Guide](./docs/setup.md).
+For detailed Docker setup instructions, see the [Docker Setup Guide](./docs/docker-setup.md).
 
 For architecture and design details, see the [Architecture Documentation](./docs/architecture.md).
 

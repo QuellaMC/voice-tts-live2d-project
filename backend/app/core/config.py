@@ -35,16 +35,64 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "http://localhost:3000"
 
     # CORS
-    BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
+    BACKEND_CORS_ORIGINS: List[Union[AnyHttpUrl, str]] = []
 
     @validator("BACKEND_CORS_ORIGINS", pre=True)
-    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
-        """Validate CORS origins."""
-        if isinstance(v, str) and not v.startswith("["):
-            return [i.strip() for i in v.split(",")]
-        elif isinstance(v, (list, str)):
+    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[AnyHttpUrl], List[str]]:
+        """Validate and process CORS origins from different input formats."""
+        import logging
+        import json
+        
+        # Default safe origins if parsing fails
+        default_origins = ["http://localhost:3000", "http://127.0.0.1:3000", 
+                           "http://localhost:8000", "http://127.0.0.1:8000"]
+        
+        # If it's already a list, return it directly
+        if isinstance(v, list):
             return v
-        raise ValueError(v)
+            
+        # Handle string input
+        if isinstance(v, str):
+            # Try parsing as JSON if it looks like a JSON array
+            if v.startswith("[") and v.endswith("]"):
+                try:
+                    return json.loads(v)
+                except json.JSONDecodeError:
+                    logging.warning(f"Failed to parse CORS origins as JSON: {v}")
+            
+            # Handle comma-separated format
+            if "," in v:
+                origins = [i.strip() for i in v.split(",") if i.strip()]
+                logging.info(f"Parsed CORS origins from comma-separated string: {origins}")
+                return origins
+                
+            # Handle single origin
+            if v.strip():
+                logging.info(f"Using single CORS origin: {v.strip()}")
+                return [v.strip()]
+        
+        # Log warning and return default origins for any other case
+        logging.warning(f"Using default CORS origins due to invalid format: {v}")
+        return default_origins
+
+    @validator("BACKEND_CORS_ORIGINS", each_item=True)
+    def validate_cors_origins(cls, v: Any) -> Any:
+        """Convert string origins to AnyHttpUrl if possible, otherwise keep as string."""
+        # If it's already a valid AnyHttpUrl, return it
+        if isinstance(v, AnyHttpUrl):
+            return v
+            
+        # Handle string urls by trying to parse them, but keep them as strings if they don't parse
+        if isinstance(v, str) and v:
+            try:
+                # Try to validate as an AnyHttpUrl
+                return AnyHttpUrl(v)
+            except ValueError:
+                import logging
+                logging.warning(f"CORS origin not a valid URL, keeping as string: {v}")
+                return v
+        
+        return v
 
     # Database
     POSTGRES_SERVER: Optional[str] = None
@@ -125,11 +173,30 @@ class Settings(BaseSettings):
     # Monitoring
     JAEGER_HOST: str = "localhost"
     JAEGER_PORT: int = 6831
-    SENTRY_DSN: Optional[HttpUrl] = None
+    SENTRY_DSN: Optional[str] = None
     METRICS_ENABLED: bool = True
     METRICS_AUTH_REQUIRED: bool = True
     METRICS_USERNAME: Optional[str] = None
     METRICS_PASSWORD: Optional[str] = None
+
+    @validator("SENTRY_DSN", pre=True)
+    def validate_sentry_dsn(cls, v: Any) -> Optional[str]:
+        """Validate Sentry DSN, allowing None or empty string values."""
+        import logging
+        
+        # Handle None or empty string
+        if v is None or (isinstance(v, str) and not v.strip()):
+            return None
+            
+        # If it's a string with a value, return as is
+        if isinstance(v, str):
+            # Very basic URL validation to ensure it has a scheme
+            if not (v.startswith("http://") or v.startswith("https://")):
+                logging.warning(f"Invalid Sentry DSN format (missing scheme): {v}, setting to None")
+                return None
+            return v
+                
+        return None
 
     # Security
     JWT_SECRET: str = os.getenv("JWT_SECRET", "test_secret_key_for_testing_only")
