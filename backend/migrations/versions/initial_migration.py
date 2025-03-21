@@ -13,7 +13,9 @@ from sqlalchemy.dialects import postgresql
 revision = "initial"
 down_revision = None  # This should be None as it's the initial migration
 branch_labels = None
-depends_on = "create_users_table"  # Depends on users table but not in the migration chain
+depends_on = (
+    "create_users_table"  # Depends on users table but not in the migration chain
+)
 
 
 def upgrade() -> None:
