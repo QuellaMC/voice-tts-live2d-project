@@ -24,7 +24,7 @@ redis==5.2.1  # Redis for caching and session management
 # LLM Integration
 openai==1.65.5
 anthropic==0.47.1
-langchain==0.2.5
+langchain==0.3.21
 
 # TTS & Voice Processing
 elevenlabs==0.2.24
@@ -34,8 +34,8 @@ azure-cognitiveservices-speech==1.42.0
 soundfile==0.12.1
 numpy==1.24.4
 # Using CPU-only versions 
-torch==2.2.0
-torchaudio==2.2.0
+torch==2.6.0
+torchaudio==2.6.0
 ffmpeg-python==0.2.0
 librosa==0.10.1
 
