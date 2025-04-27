@@ -66,4 +66,4 @@ opentelemetry-instrumentation-sqlalchemy==0.42b0
 pytest==8.3.4
 pytest-mock==3.14.0  # Added for better mocking support
 pytest-cov==6.0.0  # Added for coverage reporting
-httpx==0.24.1 
+httpx==0.28.1 
