@@ -48,7 +48,7 @@ requests==2.32.2
 aiofiles==23.2.1
 python-magic==0.4.27
 loguru==0.7.0
-pdf2image==1.16.3
+pdf2image==1.17.0
 pytesseract==0.3.10
 pdfplumber==0.11.5
 prometheus_client==0.19.0  # For monitoring
